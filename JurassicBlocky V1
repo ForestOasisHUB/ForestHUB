@@ -1,0 +1,842 @@
+-- ========================================================
+-- JURASSIC BLOCKY - FOREST HUB 1.0 (Rayfield Edition)
+-- ========================================================
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "🦖 Jurassic Blocky | 🌟 ForestHUB On Top",
+    LoadingTitle = "Đang khởi động ForestHUB...",
+    LoadingSubtitle = "by Forest Team",
+    ConfigurationSaving = {
+        Enabled = false,
+        FolderName = "ForestHubConfigs",
+        FileName = "JurassicBlocky"
+    },
+    KeySystem = false,
+})
+
+-- Tạo Tabs (Trang trí danh mục)
+local TabCombat = Window:CreateTab("⚔️ Combat & Boss (Chiến Đấu & Săn Boss)", "swords")
+local TabFarm = Window:CreateTab("🌾 Auto Farm (Tự Động Cày Cuốc)", "gem")
+local TabPlayer = Window:CreateTab("🛡️ Player & ESP (Nhân Vật & Nhìn Xuyên Tường)", "eye")
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+local AutoKillActive = false
+local BossFarmActive = false
+local AutoTargetKillActive = false
+local IsAutoAmberRunning = false
+local IsAutoGoatRunning = false
+
+local Connection = nil
+local AmberConnection = nil
+local GoatConnection = nil
+local InstantPromptConnection = nil
+local NoclipConnection = nil
+local FullbrightConnection = nil
+
+local SafeHeight = 12 
+local BiteAltitude = 0 
+local AttackSpeed = 0.22 
+
+local LockedPlayerTarget = nil
+local LockedBossTarget = nil
+local LockedGoatTarget = nil
+local SelectedTargetPlayerName = nil
+local LastAttackTick = 0
+
+local AmberParagraph = nil
+local GoatParagraph = nil
+
+local function UpdateAmberStatus(text)
+    if not AmberParagraph then return end
+    pcall(function()
+        AmberParagraph:Set({
+            Title = "📊 Tiến Độ Auto Amber (Trạng Thái Thu Nhặt Ngọc)",
+            Content = text
+        })
+    end)
+end
+
+local function UpdateGoatStatus(text)
+    if not GoatParagraph then return end
+    pcall(function()
+        GoatParagraph:Set({
+            Title = "📊 Tiến Độ Auto Goat (Trạng Thái Săn Dê)",
+            Content = text
+        })
+    end)
+end
+
+-- ========================================================
+-- ESP & FULLBRIGHT SYSTEM
+-- ========================================================
+local ESPEnabled = false
+local FullbrightEnabled = false
+local ESPFolder = Instance.new("Folder", Workspace)
+ESPFolder.Name = "ForestHub_ESP_Folder"
+
+local function ClearESP()
+    for _, v in pairs(ESPFolder:GetChildren()) do
+        v:Destroy()
+    end
+end
+
+local function UpdatePlayerESP()
+    ClearESP()
+    if not ESPEnabled then return end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                local hl = Instance.new("Highlight")
+                hl.Name = "ESPHighlight"
+                hl.Adornee = char
+                hl.FillColor = Color3.fromRGB(20, 80, 20)   
+                hl.OutlineColor = Color3.fromRGB(50, 255, 50) 
+                hl.FillTransparency = 0.4
+                hl.OutlineTransparency = 0
+                hl.Parent = ESPFolder
+                
+                local bg = Instance.new("BillboardGui")
+                bg.Name = "ESPNameAndHealth"
+                bg.Adornee = hrp
+                bg.Size = UDim2.new(0, 200, 0, 60)
+                bg.StudsOffset = Vector3.new(0, 3.8, 0)
+                bg.AlwaysOnTop = true
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Name = "NameTag"
+                textLabel.Size = UDim2.new(1, 0, 0, 25)
+                textLabel.BackgroundTransparency = 1
+                textLabel.Text = player.Name .. " (" .. player.DisplayName .. ")"
+                textLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
+                textLabel.TextSize = 14
+                textLabel.Font = Enum.Font.SourceSansBold
+                textLabel.TextStrokeTransparency = 0
+                textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                textLabel.Parent = bg
+                
+                local healthBarBg = Instance.new("Frame")
+                healthBarBg.Name = "HealthBarBg"
+                healthBarBg.Size = UDim2.new(0, 120, 0, 8)
+                healthBarBg.Position = UDim2.new(0.5, -60, 0, 28)
+                healthBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                healthBarBg.BorderSizePixel = 0
+                healthBarBg.Parent = bg
+                
+                local bgCorner = Instance.new("UICorner")
+                bgCorner.CornerRadius = UDim.new(1, 0)
+                bgCorner.Parent = healthBarBg
+                
+                local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                local healthBarFill = Instance.new("Frame")
+                healthBarFill.Name = "HealthBarFill"
+                healthBarFill.Size = UDim2.new(healthPercent, 0, 1, 0)
+                healthBarFill.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+                healthBarFill.BorderSizePixel = 0
+                healthBarFill.Parent = healthBarBg
+                
+                local fillCorner = Instance.new("UICorner")
+                fillCorner.CornerRadius = UDim.new(1, 0)
+                fillCorner.Parent = healthBarFill
+                
+                bg.Parent = ESPFolder
+            end
+        end
+    end
+end
+
+local function GetLockedPlayer()
+    if LockedPlayerTarget and LockedPlayerTarget.Character then
+        local hum = LockedPlayerTarget.Character:FindFirstChildOfClass("Humanoid")
+        local hrp = LockedPlayerTarget.Character:FindFirstChild("HumanoidRootPart")
+        if hum and hum.Health > 0 and hrp then return hrp end
+    end
+    
+    LockedPlayerTarget = nil
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local nearestPlayer = nil
+    local shortestDist = math.huge
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            local targetHum = player.Character:FindFirstChildOfClass("Humanoid")
+            if targetHrp and targetHum and targetHum.Health > 0 then
+                local dist = (hrp.Position - targetHrp.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    nearestPlayer = targetHrp
+                    LockedPlayerTarget = player
+                end
+            end
+        end
+    end
+    return nearestPlayer
+end
+
+local function GetSelectedPlayerTargetHRP()
+    if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác (No other players)" then
+        return nil
+    end
+    
+    local targetPlayer = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name == SelectedTargetPlayerName or p.DisplayName == SelectedTargetPlayerName or string.find(SelectedTargetPlayerName, p.Name) then
+            targetPlayer = p
+            break
+        end
+    end
+    
+    if targetPlayer and targetPlayer.Character then
+        local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hrp and hum and hum.Health > 0 then return hrp end
+    end
+    return nil
+end
+
+local function GetLockedBossGlobal()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    local nearestBoss = nil
+    local shortestDist = math.huge
+    
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") then
+            local nameUpper = string.upper(v.Name)
+            if (string.find(nameUpper, "D-REX") or string.find(nameUpper, "DREX") or string.find(nameUpper, "BOSS")) and not Players:GetPlayerFromCharacter(v) then
+                local targetHrp = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChildWhichIsA("BasePart")
+                local targetHum = v:FindFirstChildOfClass("Humanoid")
+                
+                if targetHrp and targetHum and targetHum.Health > 0 then
+                    local dist = hrp and (hrp.Position - targetHrp.Position).Magnitude or 0
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        nearestBoss = targetHrp
+                    end
+                end
+            end
+        end
+    end
+    return nearestBoss
+end
+
+local function GetLockedGoatGlobal()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    
+    local nearestGoat = nil
+    local shortestDist = math.huge
+    
+    for _, v in ipairs(Workspace:GetDescendants()) do
+        if v:IsA("Model") then
+            local nameUpper = string.upper(v.Name)
+            if string.find(nameUpper, "GOAT") and not Players:GetPlayerFromCharacter(v) then
+                local targetHrp = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChildWhichIsA("BasePart")
+                local targetHum = v:FindFirstChildOfClass("Humanoid")
+                
+                if targetHrp and targetHum and targetHum.Health > 0 then
+                    local dist = hrp and (hrp.Position - targetHrp.Position).Magnitude or 0
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        nearestGoat = targetHrp
+                    end
+                end
+            end
+        end
+    end
+    return nearestGoat
+end
+
+local function TriggerAttackStable()
+    local currentTime = tick()
+    if currentTime - LastAttackTick >= AttackSpeed then
+        LastAttackTick = currentTime
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            
+            local tool = char:FindFirstChildOfClass("Tool")
+            if not tool then
+                local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+                if backpack then
+                    tool = backpack:FindFirstChildOfClass("Tool")
+                    if tool then LocalPlayer.Character.Humanoid:EquipTool(tool) end
+                end
+            end
+            
+            if tool then tool:Activate() end
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+            task.wait(0.01)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+        end)
+    end
+end
+
+-- ========================================================
+-- TAB COMBAT & BOSS
+-- ========================================================
+TabCombat:CreateSection("⚔️ Combat & Boss Automation (Tự Động Chiến Đấu)")
+
+TabCombat:CreateToggle({
+    Name = "⚔️ Auto Kill Players (Tự Động Bám Sát Tiêu Diệt Người Chơi)",
+    CurrentValue = false,
+    Flag = "AutoKillPlayers",
+    Callback = function(v)
+        AutoKillActive = v
+        if AutoKillActive then
+            if BossFarmActive then BossFarmActive = false end
+            if AutoTargetKillActive then AutoTargetKillActive = false end
+            if IsAutoAmberRunning then IsAutoAmberRunning = false end
+            if IsAutoGoatRunning then IsAutoGoatRunning = false end
+            LockedPlayerTarget = nil
+            
+            Connection = RunService.Heartbeat:Connect(function()
+                pcall(function()
+                    local targetHrp = GetLockedPlayer()
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    
+                    if hrp and hum and targetHrp then
+                        hum.PlatformStand = true
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        
+                        local targetCF = targetHrp.CFrame
+                        local targetVel = targetHrp.AssemblyLinearVelocity
+                        local predictedPos = targetCF.Position + (targetVel * 0.25)
+                        local finalHeight = SafeHeight + BiteAltitude
+                        local safeHoverPos = predictedPos + Vector3.new(0, finalHeight, 0)
+                        
+                        hrp.CFrame = CFrame.new(safeHoverPos, targetHrp.Position + Vector3.new(0, 1, 0))
+                        TriggerAttackStable()
+                    elseif hum then
+                        hum.PlatformStand = false
+                    end
+                end)
+            end)
+        else 
+            if Connection then Connection:Disconnect() end 
+            LockedPlayerTarget = nil
+            pcall(function() LocalPlayer.Character.Humanoid.PlatformStand = false end)
+        end
+    end
+})
+
+TabCombat:CreateToggle({
+    Name = "👑 Auto Farm D-Rex Boss (Tự Động Săn Boss Toàn Map)",
+    CurrentValue = false,
+    Flag = "AutoFarmBoss",
+    Callback = function(v)
+        BossFarmActive = v
+        if BossFarmActive then
+            if AutoKillActive then AutoKillActive = false end
+            if AutoTargetKillActive then AutoTargetKillActive = false end
+            if IsAutoAmberRunning then IsAutoAmberRunning = false end
+            if IsAutoGoatRunning then IsAutoGoatRunning = false end
+            
+            Connection = RunService.Heartbeat:Connect(function()
+                pcall(function()
+                    local targetHrp = GetLockedBossGlobal()
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    
+                    if hrp and hum and targetHrp then
+                        hum.PlatformStand = true
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        
+                        local targetCF = targetHrp.CFrame
+                        local targetVel = targetHrp.AssemblyLinearVelocity
+                        local predictedPos = targetCF.Position + (targetVel * 0.25)
+                        local finalHeight = SafeHeight + BiteAltitude
+                        local safeHoverPos = predictedPos + Vector3.new(0, finalHeight, 0)
+                        
+                        hrp.CFrame = CFrame.new(safeHoverPos, targetHrp.Position + Vector3.new(0, 1, 0))
+                        TriggerAttackStable()
+                    elseif hum then
+                        hum.PlatformStand = false
+                    end
+                end)
+            end)
+        else 
+            if Connection then Connection:Disconnect() end 
+            pcall(function() LocalPlayer.Character.Humanoid.PlatformStand = false end)
+        end
+    end
+})
+
+TabCombat:CreateSection("🎯 Target Selection & Specific Kill (Chọn Mục Tiêu Riêng)")
+
+local function GetPlayerNames()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(list, p.Name) end
+    end
+    if #list == 0 then table.insert(list, "Không có ai khác (No other players)") end
+    return list
+end
+
+local PlayerListDropdown = TabCombat:CreateDropdown({
+    Name = "👥 Chọn Người Chơi Cụ Thể (Select Specific Player)",
+    Options = GetPlayerNames(),
+    CurrentOption = GetPlayerNames()[1] or "",
+    Flag = "SelectedPlayerDropdown",
+    Callback = function(Option)
+        if type(Option) == "table" then
+            SelectedTargetPlayerName = Option[1]
+        else
+            SelectedTargetPlayerName = Option
+        end
+    end
+})
+
+TabCombat:CreateButton({
+    Name = "🔄 Refresh Danh Sách Player (Làm Mới Danh Sách)",
+    Callback = function()
+        pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
+        Rayfield:Notify({Title = "Thành Công (Success)", Content = "Đã làm mới danh sách người chơi!", Duration = 2})
+    end
+})
+
+Players.PlayerAdded:Connect(function()
+    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
+end)
+Players.PlayerRemoving:Connect(function()
+    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
+end)
+
+TabCombat:CreateToggle({
+    Name = "🎯 Auto Target Kill (Bám Sát & Tiêu Diệt Mục Tiêu Đã Chọn)",
+    CurrentValue = false,
+    Flag = "AutoTargetKill",
+    Callback = function(v)
+        AutoTargetKillActive = v
+        if v then
+            if AutoKillActive then AutoKillActive = false end
+            if BossFarmActive then BossFarmActive = false end
+            if IsAutoAmberRunning then IsAutoAmberRunning = false end
+            if IsAutoGoatRunning then IsAutoGoatRunning = false end
+            
+            if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác (No other players)" then
+                local names = GetPlayerNames()
+                if names[1] and names[1] ~= "Không có ai khác (No other players)" then
+                    SelectedTargetPlayerName = names[1]
+                end
+            end
+            
+            Connection = RunService.Heartbeat:Connect(function()
+                pcall(function()
+                    local targetHrp = GetSelectedPlayerTargetHRP()
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    
+                    if hrp and hum and targetHrp then
+                        hum.PlatformStand = true
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        
+                        local targetCF = targetHrp.CFrame
+                        local targetVel = targetHrp.AssemblyLinearVelocity
+                        local predictedPos = targetCF.Position + (targetVel * 0.25)
+                        local finalHeight = SafeHeight + BiteAltitude
+                        local safeHoverPos = predictedPos + Vector3.new(0, finalHeight, 0)
+                        
+                        hrp.CFrame = CFrame.new(safeHoverPos, targetHrp.Position + Vector3.new(0, 1, 0))
+                        TriggerAttackStable()
+                    elseif hum then
+                        hum.PlatformStand = false
+                    end
+                end)
+            end)
+        else
+            if Connection then Connection:Disconnect() end
+            pcall(function() LocalPlayer.Character.Humanoid.PlatformStand = false end)
+        end
+    end
+})
+
+TabCombat:CreateSection("⚙️ Position & Speed Adjustments (Tùy Chỉnh Khoảng Cách & Tốc Độ)")
+
+TabCombat:CreateSlider({
+    Name = "Safe Height (Chiều Cao An Toàn)",
+    Range = {8, 50},
+    Increment = 1,
+    CurrentValue = 12,
+    Flag = "SafeHeightSlider",
+    Callback = function(v) SafeHeight = v end
+})
+
+TabCombat:CreateSlider({
+    Name = "Bite Altitude Offset (Độ Cao Đánh Bù)",
+    Range = {0, 100},
+    Increment = 1,
+    CurrentValue = 0,
+    Flag = "BiteAltitudeSlider",
+    Callback = function(v) BiteAltitude = v end
+})
+
+TabCombat:CreateSlider({
+    Name = "Attack Delay (Tốc Độ Đánh / Hơi Thở)",
+    Range = {0.15, 0.4},
+    Increment = 0.01,
+    CurrentValue = 0.22,
+    Flag = "AttackSpeedSlider",
+    Callback = function(v) AttackSpeed = v end
+})
+
+-- ========================================================
+-- TAB AUTO FARM
+-- ========================================================
+TabFarm:CreateSection("💎 Auto Amber (Tự Động Nhặt Ngọc Amber)")
+
+TabFarm:CreateToggle({
+    Name = "🚀 Auto Amber (Bật/Tắt Tự Động Nhặt Amber)",
+    CurrentValue = false,
+    Flag = "AutoAmberToggle",
+    Callback = function(Value)
+        IsAutoAmberRunning = Value
+        if Value then
+            if AutoKillActive then AutoKillActive = false end
+            if BossFarmActive then BossFarmActive = false end
+            if AutoTargetKillActive then AutoTargetKillActive = false end
+            if IsAutoGoatRunning then IsAutoGoatRunning = false end
+            
+            NoclipConnection = RunService.Stepped:Connect(function()
+                if not IsAutoAmberRunning then return end
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+            end)
+            
+            InstantPromptConnection = RunService.Heartbeat:Connect(function()
+                if not IsAutoAmberRunning then return end
+                pcall(function()
+                    for _, v in ipairs(Workspace:GetDescendants()) do
+                        if v:IsA("ProximityPrompt") then
+                            v.HoldDuration = 0
+                        end
+                    end
+                end)
+            end)
+            
+            AmberConnection = task.spawn(function()
+                while IsAutoAmberRunning do
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    
+                    if hrp and hum then
+                        hum.PlatformStand = true
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        
+                        local nearestPart = nil
+                        local nearestPrompt = nil
+                        local shortestDist = math.huge
+                        
+                        for _, v in ipairs(Workspace:GetDescendants()) do
+                            if v:IsA("ProximityPrompt") then
+                                local part = v.Parent:IsA("BasePart") and v.Parent or v.Parent:FindFirstChildWhichIsA("BasePart")
+                                if part then
+                                    local dist = (hrp.Position - part.Position).Magnitude
+                                    if dist < shortestDist then
+                                        shortestDist = dist
+                                        nearestPart = part
+                                        nearestPrompt = v
+                                    end
+                                end
+                            end
+                        end
+                        
+                        if nearestPart and nearestPrompt then
+                            UpdateAmberStatus(string.format("• Trạng thái: Đang bay đến Amber (Cách %.1f studs)", shortestDist))
+                            
+                            local startPos = hrp.Position
+                            local targetPos = nearestPart.Position
+                            local distance = (startPos - targetPos).Magnitude
+                            local steps = math.max(math.floor(distance / 5), 8)
+                            
+                            for i = 1, steps do
+                                if not IsAutoAmberRunning then break end
+                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                hrp.CFrame = CFrame.new(startPos:Lerp(targetPos, i / steps))
+                                task.wait(0.008) 
+                            end
+                            
+                            if not IsAutoAmberRunning then break end
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                            hrp.CFrame = CFrame.new(targetPos)
+                            
+                            UpdateAmberStatus("• Trạng thái: Đã đến nơi\n• Đang tương tác nhặt vật phẩm...")
+                            
+                            local waitTime = 0
+                            while waitTime < 0.25 and IsAutoAmberRunning do
+                                pcall(function()
+                                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                    hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                                    nearestPrompt.HoldDuration = 0
+                                    fireproximityprompt(nearestPrompt, 0)
+                                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                                    task.wait(0.01)
+                                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                                end)
+                                task.wait(0.02)
+                                waitTime = waitTime + 0.02
+                            end
+                        else
+                            UpdateAmberStatus("• Trạng thái: Không tìm thấy Amber trên map. Đang quét lại...")
+                            task.wait(0.4)
+                        end
+                    else
+                        task.wait(0.4)
+                    end
+                end
+                pcall(function() LocalPlayer.Character.Humanoid.PlatformStand = false end)
+            end)
+        else
+            IsAutoAmberRunning = false
+            if AmberConnection then task.cancel(AmberConnection) end
+            if InstantPromptConnection then InstantPromptConnection:Disconnect() end
+            if NoclipConnection then NoclipConnection:Disconnect() end
+            
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                    char.Humanoid.PlatformStand = false
+                end
+            end)
+            
+            UpdateAmberStatus("• Trạng thái: Đang tắt (Offline)")
+        end
+    end
+})
+
+AmberParagraph = TabFarm:CreateParagraph({
+    Title = "📊 Tiến Độ Auto Amber (Trạng Thái Thu Nhặt Ngọc)",
+    Content = "• Trạng thái: Đang tắt (Offline)\n• Bấm bật công tắc phía trên để bắt đầu."
+})
+
+TabFarm:CreateSection("🐐 Auto Goat (Tự Động Săn Dê)")
+
+TabFarm:CreateToggle({
+    Name = "🚀 Auto Goat (Bật/Tắt Tự Động Săn Dê Mượt Mà)",
+    CurrentValue = false,
+    Flag = "AutoGoatToggle",
+    Callback = function(Value)
+        IsAutoGoatRunning = Value
+        if Value then
+            if AutoKillActive then AutoKillActive = false end
+            if BossFarmActive then BossFarmActive = false end
+            if AutoTargetKillActive then AutoTargetKillActive = false end
+            if IsAutoAmberRunning then IsAutoAmberRunning = false end
+            
+            NoclipConnection = RunService.Stepped:Connect(function()
+                if not IsAutoGoatRunning then return end
+                pcall(function()
+                    local char = LocalPlayer.Character
+                    if char then
+                        for _, part in ipairs(char:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end
+                end)
+            end)
+            
+            GoatConnection = task.spawn(function()
+                while IsAutoGoatRunning do
+                    local targetHrp = GetLockedGoatGlobal()
+                    local char = LocalPlayer.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    
+                    if hrp and hum and targetHrp then
+                        hum.PlatformStand = true
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                        
+                        local targetCF = targetHrp.CFrame
+                        local targetVel = targetHrp.AssemblyLinearVelocity
+                        local predictedPos = targetCF.Position + (targetVel * 0.12)
+                        local finalHeight = SafeHeight + BiteAltitude
+                        local safeHoverPos = predictedPos + Vector3.new(0, finalHeight, 0)
+                        
+                        local startPos = hrp.Position
+                        local distance = (startPos - safeHoverPos).Magnitude
+                        local steps = math.max(math.floor(distance / 3), 25)
+                        
+                        for i = 1, steps do
+                            if not IsAutoGoatRunning then break end
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                            hrp.CFrame = CFrame.new(startPos:Lerp(safeHoverPos, i / steps), targetHrp.Position + Vector3.new(0, 1, 0))
+                            task.wait(0.02) 
+                        end
+                        
+                        while IsAutoGoatRunning do
+                            local currentTargetHrp = GetLockedGoatGlobal()
+                            if not currentTargetHrp or currentTargetHrp.Parent ~= targetHrp.Parent then
+                                break
+                            end
+                            
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                            local tPos = currentTargetHrp.Position
+                            local tVel = currentTargetHrp.AssemblyLinearVelocity
+                            local currentHover = tPos + (tVel * 0.12) + Vector3.new(0, SafeHeight + BiteAltitude, 0)
+                            
+                            hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(currentHover, tPos + Vector3.new(0, 1, 0)), 0.25)
+                            UpdateGoatStatus(string.format("• Trạng thái: Đang tấn công Dê\n• Khoảng cách: %.1f studs", (hrp.Position - currentTargetHrp.Position).Magnitude))
+                            TriggerAttackStable()
+                            task.wait(0.025)
+                        end
+                    else
+                        if hum then hum.PlatformStand = false end
+                        UpdateGoatStatus("• Trạng thái: Đã quét sạch Dê trên map. Đang tìm kiếm đợt spawn mới...")
+                        task.wait(0.4)
+                    end
+                end
+                pcall(function() LocalPlayer.Character.Humanoid.PlatformStand = false end)
+            end)
+        else
+            IsAutoGoatRunning = false
+            if GoatConnection then task.cancel(GoatConnection) end
+            if NoclipConnection then NoclipConnection:Disconnect() end
+            
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = true
+                        end
+                    end
+                    char.Humanoid.PlatformStand = true
+                    task.wait(0.05)
+                    char.Humanoid.PlatformStand = false
+                end
+            end)
+            
+            UpdateGoatStatus("• Trạng thái: Đang tắt (Offline)")
+        end
+    end
+})
+
+GoatParagraph = TabFarm:CreateParagraph({
+    Title = "📊 Tiến Độ Auto Goat (Trạng Thái Săn Dê)",
+    Content = "• Trạng thái: Đang tắt (Offline)\n• Bấm bật công tắc phía trên để bắt đầu."
+})
+
+-- ========================================================
+-- TAB PLAYER & ESP
+-- ========================================================
+TabPlayer:CreateSection("🛡️ Player Customizations (Tùy Chỉnh Nhân Vật)")
+
+TabPlayer:CreateSlider({
+    Name = "WalkSpeed (Tốc Độ Di Chuyển)",
+    Range = {16, 150},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "WalkSpeedSlider",
+    Callback = function(v) pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = v end) end
+})
+
+TabPlayer:CreateSection("👀 ESP & Lighting Features (Tính Năng ESP & Sáng Môi Trường)")
+
+TabPlayer:CreateToggle({
+    Name = "Player ESP (Hiển Thị Khung Người Chơi)",
+    CurrentValue = false,
+    Flag = "PlayerESP",
+    Callback = function(v)
+        ESPEnabled = v
+        if not ESPEnabled then
+            ClearESP()
+        else
+            UpdatePlayerESP()
+        end
+    end
+})
+
+TabPlayer:CreateToggle({
+    Name = "Fullbright (Sáng Rõ Toàn Bản Đồ Không Tối)",
+    CurrentValue = false,
+    Flag = "FullbrightToggle",
+    Callback = function(v)
+        FullbrightEnabled = v
+        if FullbrightEnabled then
+            FullbrightConnection = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    Lighting.Brightness = 2
+                    Lighting.ClockTime = 14
+                    Lighting.FogEnd = 100000
+                    Lighting.GlobalShadows = false
+                    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+                end)
+            end)
+        else
+            if FullbrightConnection then
+                FullbrightConnection:Disconnect()
+                FullbrightConnection = nil
+            end
+            pcall(function()
+                Lighting.Brightness = 1
+                Lighting.GlobalShadows = true
+                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+            end)
+        end
+    end
+})
+
+local ESPUpdateTimer = 0
+RunService.RenderStepped:Connect(function(dt)
+    if ESPEnabled then
+        ESPUpdateTimer = ESPUpdateTimer + dt
+        if ESPUpdateTimer >= 0.3 then
+            ESPUpdateTimer = 0
+            UpdatePlayerESP()
+        end
+    end
+end)
+
+pcall(function()
+    if delfile and isfile and isfile("ForestHubConfigs/JurassicBlocky.json") then
+        delfile("ForestHubConfigs/JurassicBlocky.json")
+    end
+end)
+
+Rayfield:LoadConfiguration()
+Rayfield:Notify({Title = "ForestHUB Ready!", Content = "Đã thêm tính năng Fullbright thành công!", Duration = 4})
