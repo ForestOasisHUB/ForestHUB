@@ -1,0 +1,408 @@
+-- ========================================================
+-- 🌿 FOREST OASIS • ULTIMATE SERVER HOP (FOREST STYLE) 🌿
+-- ========================================================
+-- Author: HuyKhuaLong2
+-- ========================================================
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local PlaceId = game.PlaceId
+local DISCORD_LINK = "https://discord.gg/h2VZdgmdV"
+local ExecutorUsername = LocalPlayer.Name
+
+-- Xóa UI cũ nếu có tránh bị trùng lặp
+if CoreGui:FindFirstChild("ForestServerHopForestStyle") then
+    CoreGui.ForestServerHopForestStyle:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ForestServerHopForestStyle"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- ========================================================
+-- 1. KHUNG MENU CHÍNH & HIỆU ỨNG MƯA RỪNG
+-- ========================================================
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 410, 0, 265)
+MainFrame.Position = UDim2.new(0.5, -205, 0.4, -132)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 14)
+MainFrame.BackgroundTransparency = 0.05
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 18)
+
+-- Viền LED RGB phong cách thiên nhiên
+local MainShadow = Instance.new("UIStroke")
+MainShadow.Thickness = 4
+MainShadow.Transparency = 0.2
+MainShadow.Parent = MainFrame
+
+task.spawn(function()
+    local hue = 0
+    while true do
+        hue = (hue + 1.5) % 360
+        MainShadow.Color = Color3.fromHSV(hue / 360, 0.75, 0.9)
+        task.wait(0.03)
+    end
+end)
+
+-- Hiệu ứng lá rụng / mưa sao băng xanh
+task.spawn(function()
+    while ScreenGui and ScreenGui.Parent do
+        local star = Instance.new("Frame")
+        star.Size = UDim2.new(0, math.random(2, 3), 0, math.random(20, 45))
+        star.Position = UDim2.new(math.random(0, 410) / 410, 0, -0.1, 0)
+        star.BackgroundColor3 = Color3.fromRGB(120, 240, 150)
+        star.BorderSizePixel = 0
+        star.BackgroundTransparency = math.random(30, 60) / 100
+        star.ZIndex = 1
+        star.Parent = MainFrame
+        
+        Instance.new("UICorner", star).CornerRadius = UDim.new(1, 0)
+        
+        task.spawn(function()
+            local duration = math.random(18, 28) / 10
+            local elapsed = 0
+            while elapsed < duration and star and star.Parent do
+                local dt = RunService.RenderStepped:Wait()
+                elapsed = elapsed + dt
+                star.Position = star.Position + UDim2.new(-0.02 * dt, 0, 0.4 * dt, 0)
+            end
+            if star then star:Destroy() end
+        end)
+        
+        task.wait(0.12)
+    end
+end)
+
+-- ========================================================
+-- 2. THANH TOPBAR (FANCY FOREST FONT)
+-- ========================================================
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 80)
+TopBar.BackgroundTransparency = 1
+TopBar.ZIndex = 3
+TopBar.Parent = MainFrame
+
+-- Nút Dấu X Tắt UI
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(1, -42, 0, 12)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 13
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.ZIndex = 5
+CloseBtn.Parent = TopBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Logo Avatar
+local LogoImg = Instance.new("ImageLabel")
+LogoImg.Size = UDim2.new(0, 46, 0, 46)
+LogoImg.Position = UDim2.new(0, 15, 0, 15)
+LogoImg.BackgroundColor3 = Color3.fromRGB(15, 35, 22)
+LogoImg.ZIndex = 3
+LogoImg.Parent = TopBar
+Instance.new("UICorner", LogoImg).CornerRadius = UDim.new(1, 0)
+
+local LogoStroke = Instance.new("UIStroke")
+LogoStroke.Color = Color3.fromRGB(70, 200, 110)
+LogoStroke.Thickness = 2
+LogoStroke.Parent = LogoImg
+
+pcall(function()
+    local success, url = pcall(function()
+        return Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    end)
+    if success and url then LogoImg.Image = url else LogoImg.Image = "rbxassetid://6034293637" end
+end)
+
+-- 🌲 TÊN HUB DÙNG FONT PHONG CÁCH RỪNG SÂU (SpecialElite)
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 300, 0, 24)
+Title.Position = UDim2.new(0, 72, 0, 8)
+Title.BackgroundTransparency = 1
+Title.Text = "🌿 FOREST OASIS HUB"
+Title.TextColor3 = Color3.fromRGB(140, 255, 180)
+Title.TextSize = 16
+Title.Font = Enum.Font.SpecialElite -- Kiểu chữ mộc mạc, đậm chất hoang dã/rừng rậm
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 3
+Title.Parent = TopBar
+
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Size = UDim2.new(0, 260, 0, 16)
+SubTitle.Position = UDim2.new(0, 72, 0, 32)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "✨ ULTIMATE 1-PLAYER SERVER HOPPER"
+SubTitle.TextColor3 = Color3.fromRGB(140, 200, 165)
+SubTitle.TextSize = 9.5
+SubTitle.Font = Enum.Font.GothamBold
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.ZIndex = 3
+SubTitle.Parent = TopBar
+
+-- Dòng bên trái: Tên thật (Username)
+local AuthorLabel = Instance.new("TextLabel")
+AuthorLabel.Size = UDim2.new(0, 200, 0, 16)
+AuthorLabel.Position = UDim2.new(0, 72, 0, 54)
+AuthorLabel.BackgroundTransparency = 1
+AuthorLabel.Text = "👤 Code by: " .. ExecutorUsername
+AuthorLabel.TextColor3 = Color3.fromRGB(120, 160, 135)
+AuthorLabel.TextSize = 10
+AuthorLabel.Font = Enum.Font.GothamMedium
+AuthorLabel.TextXAlignment = Enum.TextXAlignment.Left
+AuthorLabel.ZIndex = 3
+AuthorLabel.Parent = TopBar
+
+-- Dòng bên phải: Credit M4ckenzieX
+local UserLabel = Instance.new("TextLabel")
+UserLabel.Size = UDim2.new(0, 150, 0, 16)
+UserLabel.Position = UDim2.new(1, -160, 0, 54)
+UserLabel.BackgroundTransparency = 1
+UserLabel.Text = "👑 Credit: M4ckenzieX"
+UserLabel.TextColor3 = Color3.fromRGB(110, 190, 140)
+UserLabel.TextSize = 10
+UserLabel.Font = Enum.Font.GothamBold
+UserLabel.TextXAlignment = Enum.TextXAlignment.Right
+UserLabel.ZIndex = 3
+UserLabel.Parent = TopBar
+
+-- ========================================================
+-- 3. KHUNG NỘI DUNG CHÍNH
+-- ========================================================
+local InnerCard = Instance.new("Frame")
+InnerCard.Size = UDim2.new(0.92, 0, 0, 138)
+InnerCard.Position = UDim2.new(0.04, 0, 0, 85)
+InnerCard.BackgroundColor3 = Color3.fromRGB(14, 32, 20)
+InnerCard.BackgroundTransparency = 0.2
+InnerCard.BorderSizePixel = 0
+InnerCard.ZIndex = 2
+InnerCard.Parent = MainFrame
+Instance.new("UICorner", InnerCard).CornerRadius = UDim.new(0, 14)
+
+local InnerStroke = Instance.new("UIStroke")
+InnerStroke.Color = Color3.fromRGB(40, 120, 70)
+InnerStroke.Thickness = 1.2
+InnerStroke.Transparency = 0.4
+InnerStroke.Parent = InnerCard
+
+-- Chấm đèn trạng thái
+local LiveDot = Instance.new("Frame")
+LiveDot.Size = UDim2.new(0, 9, 0, 9)
+LiveDot.Position = UDim2.new(0, 14, 0, 16)
+LiveDot.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+LiveDot.BorderSizePixel = 0
+LiveDot.ZIndex = 3
+LiveDot.Parent = InnerCard
+Instance.new("UICorner", LiveDot).CornerRadius = UDim.new(1, 0)
+
+task.spawn(function()
+    while LiveDot and LiveDot.Parent do
+        LiveDot.BackgroundTransparency = 0
+        task.wait(0.5)
+        LiveDot.BackgroundTransparency = 0.7
+        task.wait(0.5)
+    end
+end)
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, -30, 0, 24)
+StatusLabel.Position = UDim2.new(0, 30, 0, 8)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Status: Ready to hop empty server"
+StatusLabel.TextColor3 = Color3.fromRGB(190, 240, 210)
+StatusLabel.TextSize = 12
+StatusLabel.Font = Enum.Font.GothamSemibold
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.ZIndex = 3
+StatusLabel.Parent = InnerCard
+
+-- Nút Bấm Khởi Chạy
+local HopButton = Instance.new("TextButton")
+HopButton.Size = UDim2.new(0.94, 0, 0, 54)
+HopButton.Position = UDim2.new(0.03, 0, 0, 42)
+HopButton.BackgroundColor3 = Color3.fromRGB(15, 90, 50)
+HopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+HopButton.Text = "⚡ START SERVER HOP"
+HopButton.TextSize = 14.5
+HopButton.Font = Enum.Font.GothamBlack
+HopButton.ZIndex = 3
+HopButton.Parent = InnerCard
+Instance.new("UICorner", HopButton).CornerRadius = UDim.new(0, 12)
+
+local HopBtnStroke = Instance.new("UIStroke")
+HopBtnStroke.Color = Color3.fromRGB(60, 180, 100)
+HopBtnStroke.Thickness = 1.5
+HopBtnStroke.Parent = HopButton
+
+HopButton.MouseButton1Down:Connect(function()
+    HopButton.BackgroundColor3 = Color3.fromRGB(10, 65, 35)
+end)
+HopButton.MouseButton1Up:Connect(function()
+    HopButton.BackgroundColor3 = Color3.fromRGB(15, 90, 50)
+end)
+
+local DecorHint = Instance.new("TextLabel")
+DecorHint.Size = UDim2.new(1, 0, 0, 18)
+DecorHint.Position = UDim2.new(0, 0, 0, 105)
+DecorHint.BackgroundTransparency = 1
+DecorHint.Text = "🛡️ Safe & Fast System • Auto Bypass Queue"
+DecorHint.TextColor3 = Color3.fromRGB(100, 150, 120)
+DecorHint.TextSize = 10
+DecorHint.Font = Enum.Font.GothamMedium
+DecorHint.ZIndex = 3
+DecorHint.Parent = InnerCard
+
+-- ========================================================
+-- 4. NÚT DISCORD & THÔNG BÁO
+-- ========================================================
+local DiscordBtn = Instance.new("TextButton")
+DiscordBtn.Size = UDim2.new(0, 36, 0, 36)
+DiscordBtn.Position = UDim2.new(1, -46, 1, -46)
+DiscordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+DiscordBtn.Text = ""
+DiscordBtn.ZIndex = 4
+DiscordBtn.Parent = MainFrame
+Instance.new("UICorner", DiscordBtn).CornerRadius = UDim.new(1, 0)
+
+local DiscordStroke = Instance.new("UIStroke")
+DiscordStroke.Color = Color3.fromRGB(255, 255, 255)
+DiscordStroke.Thickness = 1.2
+DiscordStroke.Parent = DiscordBtn
+
+local DiscordIcon = Instance.new("TextLabel")
+DiscordIcon.Size = UDim2.new(1, 0, 1, 0)
+DiscordIcon.BackgroundTransparency = 1
+DiscordIcon.Text = "💬"
+DiscordIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
+DiscordIcon.TextSize = 16
+DiscordIcon.Font = Enum.Font.GothamBold
+DiscordIcon.ZIndex = 5
+DiscordIcon.Parent = DiscordBtn
+
+local CopyNotif = Instance.new("TextLabel")
+CopyNotif.Size = UDim2.new(0, 170, 0, 28)
+CopyNotif.Position = UDim2.new(1, -225, 1, -42)
+CopyNotif.BackgroundColor3 = Color3.fromRGB(15, 35, 22)
+CopyNotif.TextColor3 = Color3.fromRGB(46, 204, 113)
+CopyNotif.Text = "✨ Copied Discord Link!"
+CopyNotif.TextSize = 11
+CopyNotif.Font = Enum.Font.GothamBold
+CopyNotif.Visible = false
+CopyNotif.ZIndex = 5
+CopyNotif.Parent = MainFrame
+Instance.new("UICorner", CopyNotif).CornerRadius = UDim.new(0, 8)
+local NotifStroke = Instance.new("UIStroke")
+NotifStroke.Color = Color3.fromRGB(46, 204, 113)
+NotifStroke.Thickness = 1
+NotifStroke.Parent = CopyNotif
+
+local function ShowCopyNotif()
+    CopyNotif.Visible = true
+    task.wait(1.5)
+    CopyNotif.Visible = false
+end
+
+DiscordBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        if setclipboard then
+            setclipboard(DISCORD_LINK)
+        elseif toclipboard then
+            toclipboard(DISCORD_LINK)
+        end
+    end)
+    task.spawn(ShowCopyNotif)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "🌿 FOREST OASIS",
+        Text = "Discord link copied to clipboard!",
+        Duration = 3
+    })
+end)
+
+-- ========================================================
+-- 5. LOGIC TÌM SERVER (1 PLAYER HOPPER)
+-- ========================================================
+local function NotifyVIP(titleText, descText)
+    pcall(function()
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "🌿 [FOREST] • " .. titleText,
+            Text = descText,
+            Duration = 3.5
+        })
+    end)
+end
+
+local isScanning = false
+
+local function UltimateOnePlayerHop()
+    if isScanning then return end
+    isScanning = true
+    
+    HopButton.Text = "⏳ SCANNING SYSTEMS..."
+    HopButton.BackgroundColor3 = Color3.fromRGB(20, 50, 32)
+    StatusLabel.Text = "Scanning for empty 1-player server..."
+    NotifyVIP("Server Hopper", "⚡ Scanning system for an empty 1-player server...")
+    
+    local cursor = ""
+    local validServers = {}
+    
+    repeat
+        local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+        if cursor and cursor ~= "" then
+            url = url .. "&cursor=" .. cursor
+        end
+        
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+        
+        if success and result and result.data then
+            for _, server in ipairs(result.data) do
+                if server.id ~= game.JobId and server.playing == 1 and server.maxPlayers and server.playing < server.maxPlayers then
+                    table.insert(validServers, server)
+                end
+            end
+            cursor = result.nextPageCursor
+        else
+            break
+        end
+    until not cursor or cursor == "" or #validServers >= 10
+
+    if #validServers > 0 then
+        local targetServer = validServers[math.random(1, #validServers)]
+        StatusLabel.Text = "🎯 Found! Teleporting now..."
+        NotifyVIP("Success! 🎯", "🚀 Found a 1-player server. Teleporting you in...")
+        
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(PlaceId, targetServer.id, LocalPlayer)
+        end)
+    else
+        StatusLabel.Text = "⏳ Not found, scanning next page..."
+        NotifyVIP("Searching...", "⏳ No 1-player server found yet, scanning next page...")
+        task.wait(1.5)
+        isScanning = false
+        UltimateOnePlayerHop()
+    end
+end
+
+HopButton.MouseButton1Click:Connect(function()
+    if not isScanning then
+        UltimateOnePlayerHop()
+    end
+end)
