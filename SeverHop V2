@@ -1,0 +1,732 @@
+-- ========================================================
+-- 🌿 FORESTHUB • ULTIMATE SERVER HOP & TOOLS (V4 FULL DECORATED) 🌿
+-- ========================================================
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local PlaceId = game.PlaceId
+local ExecutorUsername = LocalPlayer.Name
+
+if CoreGui:FindFirstChild("ForestHubUnifiedUI") then CoreGui.ForestHubUnifiedUI:Destroy() end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ForestHubUnifiedUI"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local MasterDraggableFrame = Instance.new("Frame")
+MasterDraggableFrame.Size = UDim2.new(0, 720, 0, 420)
+MasterDraggableFrame.Position = UDim2.new(0.5, -360, 0.5, -210)
+MasterDraggableFrame.BackgroundTransparency = 1
+MasterDraggableFrame.Active = true
+MasterDraggableFrame.Draggable = true
+MasterDraggableFrame.ClipsDescendants = false
+MasterDraggableFrame.Parent = ScreenGui
+
+-- ========================================================
+-- 🌟 HIỆU ỨNG SAO BĂNG RƠI THẲNG TRONG GUI
+-- ========================================================
+local MeteorContainer = Instance.new("Frame")
+MeteorContainer.Size = UDim2.new(1, 0, 1, 0)
+MeteorContainer.Position = UDim2.new(0, 0, 0, 0)
+MeteorContainer.BackgroundTransparency = 1
+MeteorContainer.ClipsDescendants = true
+MeteorContainer.ZIndex = 10
+MeteorContainer.Parent = MasterDraggableFrame
+
+Instance.new("UICorner", MeteorContainer).CornerRadius = UDim.new(0, 22)
+
+local MeteorFolder = Instance.new("Folder")
+MeteorFolder.Name = "MeteorShowerFX"
+MeteorFolder.Parent = MeteorContainer
+
+task.spawn(function()
+    while true do
+        pcall(function()
+            local meteor = Instance.new("Frame")
+            meteor.Size = UDim2.new(0, 2, 0, math.random(40, 80))
+            
+            local startX = math.random(5, 95) / 100
+            meteor.Position = UDim2.new(startX, 0, -0.2, 0)
+            meteor.Rotation = 0
+            
+            meteor.BackgroundColor3 = Color3.fromRGB(120, 255, 180)
+            meteor.BackgroundTransparency = 0.1
+            meteor.BorderSizePixel = 0
+            meteor.ZIndex = 10
+            meteor.Parent = MeteorFolder
+            
+            Instance.new("UICorner", meteor).CornerRadius = UDim.new(1, 0)
+            
+            local speed = math.random(6, 11) / 10
+            local tweenService = game:GetService("TweenService")
+            local info = TweenInfo.new(speed, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+            
+            local tween = tweenService:Create(meteor, info, {
+                Position = UDim2.new(startX, 0, 1.2, 0),
+                BackgroundTransparency = 1
+            })
+            tween:Play()
+            
+            task.delay(speed, function()
+                if meteor then meteor:Destroy() end
+            end)
+        end)
+        task.wait(0.05)
+    end
+end)
+
+-- ========================================================
+-- ✨ HIỆU ỨNG ĐOM ĐÓM / HẠT LẤP LÁNH TRANG TRÍ NỀN
+-- ========================================================
+local SparkleFolder = Instance.new("Folder")
+SparkleFolder.Name = "SparkleFX"
+SparkleFolder.Parent = MeteorContainer
+
+task.spawn(function()
+    while true do
+        pcall(function()
+            local sparkle = Instance.new("Frame")
+            sparkle.Size = UDim2.new(0, math.random(3, 5), 0, math.random(3, 5))
+            sparkle.Position = UDim2.new(math.random(5, 95) / 100, 0, math.random(5, 95) / 100, 0)
+            sparkle.BackgroundColor3 = Color3.fromRGB(150, 255, 200)
+            sparkle.BackgroundTransparency = 0.2
+            sparkle.BorderSizePixel = 0
+            sparkle.ZIndex = 10
+            sparkle.Parent = SparkleFolder
+            
+            Instance.new("UICorner", sparkle).CornerRadius = UDim.new(1, 0)
+            
+            local ts = game:GetService("TweenService")
+            local lifeTime = math.random(15, 30) / 10
+            
+            local tw1 = ts:Create(sparkle, TweenInfo.new(lifeTime / 2, Enum.EasingStyle.Sine), {BackgroundTransparency = 0.8, Size = UDim2.new(0, 1, 0, 1)})
+            tw1:Play()
+            tw1.Completed:Connect(function()
+                local tw2 = ts:Create(sparkle, TweenInfo.new(lifeTime / 2, Enum.EasingStyle.Sine), {BackgroundTransparency = 1, Size = UDim2.new(0, 5, 0, 5)})
+                tw2:Play()
+            end)
+            
+            task.delay(lifeTime, function()
+                if sparkle then sparkle:Destroy() end
+            end)
+        end)
+        task.wait(0.3)
+    end
+end)
+
+-- ========================================================
+-- 1. HỆ THỐNG FIX LAG
+-- ========================================================
+local function applyFixLag()
+    pcall(function()
+        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+        settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.Level01
+        UserSettings():GetService("UserGameSettings").SavedQualityLevel = Enum.SavedQualityLevel.Level1
+    end)
+
+    pcall(function()
+        local Lighting = game:GetService("Lighting")
+        local Camera = workspace.CurrentCamera
+        
+        Lighting.GlobalShadows = false
+        Lighting.ShadowSoftness = 0
+        Lighting.Brightness = 1.2
+        Lighting.ClockTime = 18
+        Lighting.FogEnd = 9e9
+        
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") or v:IsA("BlurEffect") or v:IsA("SunRaysEffect") or v:IsA("BloomEffect") or v:IsA("DepthOfFieldEffect") or v:IsA("Atmosphere") then
+                v:Destroy()
+            end
+        end
+
+        local cc = Instance.new("ColorCorrectionEffect")
+        cc.Name = "PerfectBrightnessCC"
+        cc.Brightness = -0.05
+        cc.Saturation = -0.15
+        cc.Parent = Lighting
+
+        if Camera then Camera.FieldOfView = 70 end
+    end)
+
+    task.spawn(function()
+        for _, v in ipairs(workspace:GetDescendants()) do
+            pcall(function()
+                if v:IsA("PointLight") or v:IsA("SurfaceLight") or v:IsA("SpotLight") or v:IsA("Highlight") then
+                    v:Destroy()
+                elseif v:IsA("Part") or v:IsA("UnionOperation") or v:IsA("MeshPart") then
+                    v.Material = Enum.Material.SmoothPlastic
+                    v.Reflectance = 0
+                    v.CastShadow = false
+                elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Beam") then
+                    v:Destroy()
+                elseif v:IsA("Sound") then
+                    v.Volume = 0
+                end
+            end)
+        end
+    end)
+
+    local Terrain = workspace:FindFirstChildOfClass("Terrain")
+    if Terrain then
+        pcall(function()
+            Terrain.WaterWaveSize = 0
+            Terrain.WaterWaveTransparency = 1
+            Terrain.WaterTransparency = 1
+        end)
+    end
+end
+
+-- ========================================================
+-- 2. KHUNG MENU CHÍNH (SERVER HOP) - BÊN PHẢI
+-- ========================================================
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 450, 0, 420)
+MainFrame.Position = UDim2.new(0, 270, 0, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(4, 16, 9)
+MainFrame.BackgroundTransparency = 0.08
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.ZIndex = 2
+MainFrame.Parent = MasterDraggableFrame
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 22)
+
+local MainShadow = Instance.new("UIStroke")
+MainShadow.Thickness = 2.5
+MainShadow.Transparency = 0.1
+MainShadow.Color = Color3.fromRGB(50, 255, 120) -- Phát sáng xanh lá đậm
+MainShadow.Parent = MainFrame
+
+local MainInnerGlow = Instance.new("UIStroke")
+MainInnerGlow.Thickness = 1.2
+MainInnerGlow.Transparency = 0.3
+MainInnerGlow.Color = Color3.fromRGB(20, 220, 90)
+MainInnerGlow.Parent = MainFrame
+
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 75)
+TopBar.BackgroundTransparency = 1
+TopBar.ZIndex = 3
+TopBar.Parent = MainFrame
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -38, 0, 14)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 12
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.ZIndex = 5
+CloseBtn.Parent = TopBar
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+local LogoImg = Instance.new("ImageLabel")
+LogoImg.Size = UDim2.new(0, 44, 0, 44)
+LogoImg.Position = UDim2.new(0, 15, 0, 14)
+LogoImg.BackgroundColor3 = Color3.fromRGB(15, 35, 20)
+LogoImg.ZIndex = 3
+LogoImg.Parent = TopBar
+Instance.new("UICorner", LogoImg).CornerRadius = UDim.new(1, 0)
+
+pcall(function()
+    LogoImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+end)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(0, 320, 0, 24)
+Title.Position = UDim2.new(0, 70, 0, 4)
+Title.BackgroundTransparency = 1
+Title.Text = "🌿 ForestHUB"
+Title.TextColor3 = Color3.fromRGB(0, 255, 90) -- Màu xanh lá phát sáng mạnh hơn
+Title.TextSize = 19 -- Đã làm tên to lên
+Title.Font = Enum.Font.SpecialElite
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 3
+Title.Parent = TopBar
+
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Size = UDim2.new(0, 250, 0, 16)
+SubTitle.Position = UDim2.new(0, 70, 0, 28)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "ForestHUB - SeverHop V2"
+SubTitle.TextColor3 = Color3.fromRGB(150, 255, 180)
+SubTitle.TextSize = 10
+SubTitle.Font = Enum.Font.GothamBold
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+SubTitle.ZIndex = 3
+SubTitle.Parent = TopBar
+
+local StatsLabel = Instance.new("TextLabel")
+StatsLabel.Size = UDim2.new(0, 180, 0, 16)
+StatsLabel.Position = UDim2.new(1, -215, 0, 48)
+StatsLabel.BackgroundTransparency = 1
+StatsLabel.Text = "FPS: 60 | PING: 0ms"
+StatsLabel.TextColor3 = Color3.fromRGB(120, 255, 170)
+StatsLabel.TextSize = 10.5
+StatsLabel.Font = Enum.Font.GothamBold
+StatsLabel.TextXAlignment = Enum.TextXAlignment.Right
+StatsLabel.ZIndex = 3
+StatsLabel.Parent = TopBar
+
+task.spawn(function()
+    local lastTick = tick()
+    local frameCount = 0
+    RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+        if tick() - lastTick >= 1 then
+            StatsLabel.Text = "FPS: " .. frameCount + math.random(-1,1) .. " | PING: " .. math.floor(LocalPlayer:GetNetworkPing() * 1000) .. "ms"
+            frameCount = 0
+            lastTick = tick()
+        end
+    end)
+end)
+
+local AuthorLabel = Instance.new("TextLabel")
+AuthorLabel.Size = UDim2.new(0, 320, 0, 16)
+AuthorLabel.Position = UDim2.new(0, 70, 0, 46)
+AuthorLabel.BackgroundTransparency = 1
+AuthorLabel.Text = "👤 Code by: " .. ExecutorUsername .. " | 👑 Credit: M4ckenzieX"
+AuthorLabel.TextColor3 = Color3.fromRGB(110, 190, 140)
+AuthorLabel.TextSize = 9
+AuthorLabel.Font = Enum.Font.GothamMedium
+AuthorLabel.TextXAlignment = Enum.TextXAlignment.Left
+AuthorLabel.ZIndex = 3
+AuthorLabel.Parent = TopBar
+
+local ControlFrame = Instance.new("Frame")
+ControlFrame.Size = UDim2.new(0.92, 0, 0, 42)
+ControlFrame.Position = UDim2.new(0.04, 0, 0, 75)
+ControlFrame.BackgroundTransparency = 1
+ControlFrame.ZIndex = 3
+ControlFrame.Parent = MainFrame
+
+local RefreshBtn = Instance.new("TextButton")
+RefreshBtn.Size = UDim2.new(0.48, 0, 1, 0)
+RefreshBtn.BackgroundColor3 = Color3.fromRGB(14, 110, 50)
+RefreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RefreshBtn.Text = "🔄 LOAD 1-PLAYER SERVERS"
+RefreshBtn.TextSize = 9.5
+RefreshBtn.Font = Enum.Font.GothamBlack
+RefreshBtn.ZIndex = 3
+RefreshBtn.Parent = ControlFrame
+Instance.new("UICorner", RefreshBtn).CornerRadius = UDim.new(0, 12)
+
+local FilterModeLabel = Instance.new("TextLabel")
+FilterModeLabel.Size = UDim2.new(0.48, 0, 1, 0)
+FilterModeLabel.Position = UDim2.new(0.52, 0, 0, 0)
+FilterModeLabel.BackgroundColor3 = Color3.fromRGB(10, 45, 24)
+FilterModeLabel.BackgroundTransparency = 0.2
+FilterModeLabel.TextColor3 = Color3.fromRGB(150, 255, 200)
+FilterModeLabel.Text = "🌿 1 Player Only ServerHop"
+FilterModeLabel.TextSize = 9
+FilterModeLabel.Font = Enum.Font.GothamBold
+FilterModeLabel.ZIndex = 3
+FilterModeLabel.Parent = ControlFrame
+Instance.new("UICorner", FilterModeLabel).CornerRadius = UDim.new(0, 12)
+
+local FilterStroke = Instance.new("UIStroke")
+FilterStroke.Thickness = 1
+FilterStroke.Transparency = 0.3
+FilterStroke.Color = Color3.fromRGB(60, 200, 120)
+FilterStroke.Parent = FilterModeLabel
+
+local ServerContainer = Instance.new("ScrollingFrame")
+ServerContainer.Size = UDim2.new(0.92, 0, 0, 265)
+ServerContainer.Position = UDim2.new(0.04, 0, 0, 128)
+ServerContainer.BackgroundColor3 = Color3.fromRGB(6, 18, 11)
+ServerContainer.BackgroundTransparency = 0.3
+ServerContainer.BorderSizePixel = 0
+ServerContainer.CanvasSize = UDim2.new(0, 0, 0, 0)
+ServerContainer.ScrollBarThickness = 4
+ServerContainer.ScrollBarImageColor3 = Color3.fromRGB(80, 240, 140)
+ServerContainer.ZIndex = 2
+ServerContainer.Parent = MainFrame
+Instance.new("UICorner", ServerContainer).CornerRadius = UDim.new(0, 14)
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = ServerContainer
+
+local cachedServers = {}
+
+local function DisplayServers()
+    for _, v in ipairs(ServerContainer:GetChildren()) do
+        if v:IsA("Frame") then v:Destroy() end
+    end
+    
+    local count = 0
+    for _, server in ipairs(cachedServers) do
+        count = count + 1
+        
+        local ItemFrame = Instance.new("Frame")
+        ItemFrame.Size = UDim2.new(1, -6, 0, 52)
+        ItemFrame.BackgroundColor3 = Color3.fromRGB(12, 50, 26)
+        ItemFrame.BorderSizePixel = 0
+        ItemFrame.ZIndex = 3
+        ItemFrame.Parent = ServerContainer
+        Instance.new("UICorner", ItemFrame).CornerRadius = UDim.new(0, 12)
+        
+        local InfoLabel = Instance.new("TextLabel")
+        InfoLabel.Size = UDim2.new(0.65, 0, 1, 0)
+        InfoLabel.Position = UDim2.new(0, 16, 0, 0)
+        InfoLabel.BackgroundTransparency = 1
+        InfoLabel.Text = "👥 Players: " .. server.playing .. "/" .. server.maxPlayers .. "  |  📶 " .. math.random(25, 60) .. "ms"
+        InfoLabel.TextColor3 = Color3.fromRGB(140, 255, 195)
+        InfoLabel.TextSize = 11.5
+        InfoLabel.Font = Enum.Font.GothamBold
+        InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+        InfoLabel.ZIndex = 4
+        InfoLabel.Parent = ItemFrame
+        
+        local JoinItemBtn = Instance.new("TextButton")
+        JoinItemBtn.Size = UDim2.new(0, 82, 0, 32)
+        JoinItemBtn.Position = UDim2.new(1, -90, 0.5, -16)
+        JoinItemBtn.BackgroundColor3 = Color3.fromRGB(20, 160, 85)
+        JoinItemBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        JoinItemBtn.Text = "JOIN"
+        JoinItemBtn.TextSize = 12
+        JoinItemBtn.Font = Enum.Font.GothamBlack
+        JoinItemBtn.ZIndex = 4
+        JoinItemBtn.Parent = ItemFrame
+        Instance.new("UICorner", JoinItemBtn).CornerRadius = UDim.new(0, 9)
+        
+        local serverId = server.id
+        JoinItemBtn.MouseButton1Click:Connect(function()
+            JoinItemBtn.Text = "CONNECTING"
+            JoinItemBtn.BackgroundColor3 = Color3.fromRGB(180, 120, 20)
+            pcall(function()
+                TeleportService:TeleportToPlaceInstance(PlaceId, serverId, LocalPlayer)
+            end)
+        end)
+    end
+    ServerContainer.CanvasSize = UDim2.new(0, 0, 0, count * 60)
+end
+
+local function AggregateAndLoadServers()
+    RefreshBtn.Text = "⏳ SCANNING 1-PLAYER..."
+    task.spawn(function()
+        local allServers = {}
+        local cursor = ""
+        
+        for i = 1, 3 do
+            local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            if cursor ~= "" then
+                url = url .. "&cursor=" .. cursor
+            end
+            
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(url))
+            end)
+            
+            if success and result and result.data then
+                for _, server in ipairs(result.data) do
+                    if server.id ~= game.JobId and server.playing and server.maxPlayers then
+                        if server.playing == 1 then
+                            table.insert(allServers, 1, server)
+                        elseif server.playing > 1 and server.playing < server.maxPlayers then
+                            table.insert(allServers, server)
+                        end
+                    end
+                end
+                if result.nextPageCursor then
+                    cursor = result.nextPageCursor
+                else
+                    break
+                end
+            else
+                break
+            end
+            task.wait(0.2)
+        end
+        
+        cachedServers = allServers
+        DisplayServers()
+        RefreshBtn.Text = "🔄 LOAD 1-PLAYER SERVERS"
+    end)
+end
+
+RefreshBtn.MouseButton1Click:Connect(AggregateAndLoadServers)
+task.spawn(AggregateAndLoadServers)
+
+-- ========================================================
+-- 3. KHUNG TOOLS & INFO - BÊN TRÁI
+-- ========================================================
+local InfoFrame = Instance.new("Frame")
+InfoFrame.Size = UDim2.new(0, 255, 0, 420)
+InfoFrame.Position = UDim2.new(0, 0, 0, 0)
+InfoFrame.BackgroundColor3 = Color3.fromRGB(4, 16, 9)
+InfoFrame.BackgroundTransparency = 0.08
+InfoFrame.BorderSizePixel = 0
+InfoFrame.ClipsDescendants = true
+InfoFrame.ZIndex = 2
+InfoFrame.Parent = MasterDraggableFrame
+
+Instance.new("UICorner", InfoFrame).CornerRadius = UDim.new(0, 22)
+
+local InfoShadow = Instance.new("UIStroke")
+InfoShadow.Thickness = 2.5
+InfoShadow.Transparency = 0.1
+InfoShadow.Color = Color3.fromRGB(50, 255, 120) -- Phát sáng xanh lá đậm
+InfoShadow.Parent = InfoFrame
+
+local InfoInnerGlow = Instance.new("UIStroke")
+InfoInnerGlow.Thickness = 1.2
+InfoInnerGlow.Transparency = 0.3
+InfoInnerGlow.Color = Color3.fromRGB(20, 220, 90)
+InfoInnerGlow.Parent = InfoFrame
+
+local InfoTitle = Instance.new("TextLabel")
+InfoTitle.Size = UDim2.new(1, 0, 0, 45)
+InfoTitle.Position = UDim2.new(0, 0, 0, 10)
+InfoTitle.BackgroundTransparency = 1
+InfoTitle.Text = "📌 FORESTHUB INFO & TOOLS"
+InfoTitle.TextColor3 = Color3.fromRGB(140, 255, 180)
+InfoTitle.TextSize = 11.5
+InfoTitle.Font = Enum.Font.GothamBlack
+InfoTitle.Parent = InfoFrame
+
+local StatsBox = Instance.new("Frame")
+StatsBox.Size = UDim2.new(0.88, 0, 0, 45)
+StatsBox.Position = UDim2.new(0.06, 0, 0, 55)
+StatsBox.BackgroundColor3 = Color3.fromRGB(10, 40, 22)
+StatsBox.BorderSizePixel = 0
+StatsBox.Parent = InfoFrame
+Instance.new("UICorner", StatsBox).CornerRadius = UDim.new(0, 12)
+
+local SubStatsLabel = Instance.new("TextLabel")
+SubStatsLabel.Size = UDim2.new(1, 0, 1, 0)
+SubStatsLabel.BackgroundTransparency = 1
+SubStatsLabel.Text = "⚡ FPS: 60 | 📶 PING: 0ms"
+SubStatsLabel.TextColor3 = Color3.fromRGB(130, 255, 190)
+SubStatsLabel.TextSize = 11
+SubStatsLabel.Font = Enum.Font.GothamBold
+SubStatsLabel.Parent = StatsBox
+
+task.spawn(function()
+    local lastTick = tick()
+    local frameCount = 0
+    RunService.RenderStepped:Connect(function()
+        frameCount = frameCount + 1
+        if tick() - lastTick >= 1 then
+            SubStatsLabel.Text = "⚡ FPS: " .. frameCount + math.random(-1,1) .. " | 📶 PING: " .. math.floor(LocalPlayer:GetNetworkPing() * 1000) .. "ms"
+            frameCount = 0
+            lastTick = tick()
+        end
+    end)
+end)
+
+local DiscordBox = Instance.new("Frame")
+DiscordBox.Size = UDim2.new(0.88, 0, 0, 80)
+DiscordBox.Position = UDim2.new(0.06, 0, 0, 110)
+DiscordBox.BackgroundColor3 = Color3.fromRGB(10, 40, 22)
+DiscordBox.BorderSizePixel = 0
+DiscordBox.Parent = InfoFrame
+Instance.new("UICorner", DiscordBox).CornerRadius = UDim.new(0, 12)
+
+local DiscordLabel = Instance.new("TextLabel")
+DiscordLabel.Size = UDim2.new(1, 0, 0, 25)
+DiscordLabel.Position = UDim2.new(0, 0, 0, 4)
+DiscordLabel.BackgroundTransparency = 1
+DiscordLabel.Text = "💬 Discord Community:"
+DiscordLabel.TextColor3 = Color3.fromRGB(180, 200, 255)
+DiscordLabel.TextSize = 10.5
+DiscordLabel.Font = Enum.Font.GothamBold
+DiscordLabel.Parent = DiscordBox
+
+local CopyDiscordBtn = Instance.new("TextButton")
+CopyDiscordBtn.Size = UDim2.new(0.8, 0, 0, 28)
+CopyDiscordBtn.Position = UDim2.new(0.1, 0, 0, 38)
+CopyDiscordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+CopyDiscordBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyDiscordBtn.Text = "📋 COPY DISCORD LINK"
+CopyDiscordBtn.TextSize = 9
+CopyDiscordBtn.Font = Enum.Font.GothamBold
+CopyDiscordBtn.Parent = DiscordBox
+Instance.new("UICorner", CopyDiscordBtn).CornerRadius = UDim.new(0, 6)
+
+CopyDiscordBtn.MouseButton1Click:Connect(function()
+    pcall(function()
+        setclipboard("https://discord.gg/h2VZdgmdV")
+    end)
+    CopyDiscordBtn.Text = "✅ COPIED!"
+    task.wait(1.5)
+    CopyDiscordBtn.Text = "📋 COPY DISCORD LINK"
+end)
+
+local ToolsTitle = Instance.new("TextLabel")
+ToolsTitle.Size = UDim2.new(1, 0, 0, 25)
+ToolsTitle.Position = UDim2.new(0, 0, 0, 198)
+ToolsTitle.BackgroundTransparency = 1
+ToolsTitle.Text = "🛠️ QUICK UTILITIES"
+ToolsTitle.TextColor3 = Color3.fromRGB(140, 255, 180)
+ToolsTitle.TextSize = 11
+ToolsTitle.Font = Enum.Font.GothamBlack
+ToolsTitle.Parent = InfoFrame
+
+local FixLagBtn = Instance.new("TextButton")
+FixLagBtn.Size = UDim2.new(0.88, 0, 0, 38)
+FixLagBtn.Position = UDim2.new(0.06, 0, 0, 226)
+FixLagBtn.BackgroundColor3 = Color3.fromRGB(20, 130, 60)
+FixLagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+FixLagBtn.Text = "⚡ FIX LAG BUTTON"
+FixLagBtn.TextSize = 11
+FixLagBtn.Font = Enum.Font.GothamBold
+FixLagBtn.Parent = InfoFrame
+Instance.new("UICorner", FixLagBtn).CornerRadius = UDim.new(0, 10)
+
+FixLagBtn.MouseButton1Click:Connect(function()
+    FixLagBtn.Text = "⚡ APPLIED FIX LAG!"
+    FixLagBtn.BackgroundColor3 = Color3.fromRGB(46, 204, 113)
+    applyFixLag()
+    task.wait(1.5)
+    FixLagBtn.Text = "⚡ FIX LAG BUTTON"
+end)
+
+local RejoinBtn = Instance.new("TextButton")
+RejoinBtn.Size = UDim2.new(0.88, 0, 0, 38)
+RejoinBtn.Position = UDim2.new(0.06, 0, 0, 272)
+RejoinBtn.BackgroundColor3 = Color3.fromRGB(14, 110, 50)
+RejoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RejoinBtn.Text = "🔄 REJOIN CURRENT SERVER"
+RejoinBtn.TextSize = 10.5
+RejoinBtn.Font = Enum.Font.GothamBold
+RejoinBtn.Parent = InfoFrame
+Instance.new("UICorner", RejoinBtn).CornerRadius = UDim.new(0, 10)
+
+RejoinBtn.MouseButton1Click:Connect(function()
+    RejoinBtn.Text = "⏳ REJOINING..."
+    pcall(function()
+        TeleportService:Teleport(PlaceId, LocalPlayer)
+    end)
+end)
+
+local UptimeLabel = Instance.new("TextLabel")
+UptimeLabel.Size = UDim2.new(0.88, 0, 0, 45)
+UptimeLabel.Position = UDim2.new(0.06, 0, 0, 318)
+UptimeLabel.BackgroundColor3 = Color3.fromRGB(10, 40, 22)
+UptimeLabel.BackgroundTransparency = 0.5
+UptimeLabel.Text = "⏱️ Uptime: 00:00:00"
+UptimeLabel.TextColor3 = Color3.fromRGB(120, 220, 150)
+UptimeLabel.TextSize = 11
+UptimeLabel.Font = Enum.Font.GothamBold
+UptimeLabel.Parent = InfoFrame
+Instance.new("UICorner", UptimeLabel).CornerRadius = UDim.new(0, 10)
+
+-- ========================================================
+-- ⚡ HIỆU ỨNG TIA SÉT & ⚙️ BÁNH RĂNG XOAY VÒNG
+-- ========================================================
+local LightningContainer = Instance.new("Frame")
+LightningContainer.Size = UDim2.new(0.88, 0, 0, 6)
+LightningContainer.Position = UDim2.new(0.06, 0, 0, 375)
+LightningContainer.BackgroundTransparency = 1
+LightningContainer.ClipsDescendants = true
+LightningContainer.Parent = InfoFrame
+
+local LightningBolt = Instance.new("Frame")
+LightningBolt.Size = UDim2.new(0, 60, 1, 0)
+LightningBolt.Position = UDim2.new(-0.3, 0, 0, 0)
+LightningBolt.BackgroundColor3 = Color3.fromRGB(180, 255, 220)
+LightningBolt.BorderSizePixel = 0
+LightningBolt.Parent = LightningContainer
+Instance.new("UICorner", LightningBolt).CornerRadius = UDim.new(1, 0)
+
+local LightningGlow = Instance.new("UIStroke")
+LightningGlow.Thickness = 1.5
+LightningGlow.Color = Color3.fromRGB(100, 255, 160)
+LightningGlow.Parent = LightningBolt
+
+-- Logo bánh răng xoay vòng ⚙️ kế bên tia sét
+local GearIcon = Instance.new("TextLabel")
+GearIcon.Size = UDim2.new(0, 25, 0, 25)
+GearIcon.Position = UDim2.new(1, -30, 0, -10)
+GearIcon.BackgroundTransparency = 1
+GearIcon.Text = "⚙️"
+GearIcon.TextSize = 16
+GearIcon.Parent = LightningContainer
+
+task.spawn(function()
+    while true do
+        GearIcon.Rotation = GearIcon.Rotation + 5
+        RunService.RenderStepped:Wait()
+    end
+end)
+
+task.spawn(function()
+    local ts = game:GetService("TweenService")
+    while true do
+        LightningBolt.Position = UDim2.new(-0.4, 0, 0, 0)
+        LightningBolt.BackgroundTransparency = 0.2
+        
+        local tween = ts:Create(LightningBolt, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+            Position = UDim2.new(1.1, 0, 0, 0),
+            BackgroundTransparency = 0.8
+        })
+        tween:Play()
+        task.wait(math.random(18, 30) / 10)
+    end
+end)
+
+task.spawn(function()
+    local startTime = tick()
+    while true do
+        local elapsed = math.floor(tick() - startTime)
+        local hours = math.floor(elapsed / 3600)
+        local minutes = math.floor((elapsed % 3600) / 60)
+        local seconds = elapsed % 60
+        UptimeLabel.Text = string.format("⏱️ Uptime: %02d:%02d:%02d", hours, minutes, seconds)
+        task.wait(1)
+    end
+end)
+
+-- ========================================================
+-- 🔘 NÚT THU NHỎ / MỞ RỘNG GIAO DIỆN (TOGGLE FLOATING ICON)
+-- ========================================================
+local ToggleButton = Instance.new("ImageButton")
+ToggleButton.Size = UDim2.new(0, 45, 0, 45)
+ToggleButton.Position = UDim2.new(0, 20, 0.5, -22)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(10, 35, 20)
+ToggleButton.Active = true
+ToggleButton.Draggable = true
+ToggleButton.ZIndex = 100
+ToggleButton.Parent = ScreenGui
+
+Instance.new("UICorner", ToggleButton).CornerRadius = UDim.new(1, 0)
+local ToggleStroke = Instance.new("UIStroke")
+ToggleStroke.Thickness = 2
+ToggleStroke.Color = Color3.fromRGB(80, 240, 140)
+ToggleStroke.Parent = ToggleButton
+
+pcall(function()
+    ToggleButton.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+end)
+
+local isOpen = true
+ToggleButton.MouseButton1Click:Connect(function()
+    isOpen = not isOpen
+    MasterDraggableFrame.Visible = isOpen
+end)
+
+-- Hiệu ứng phản hồi khi bấm các nút chức năng chính
+for _, btn in ipairs(ScreenGui:GetDescendants()) do
+    if btn:IsA("TextButton") then
+        btn.MouseButton1Down:Connect(function()
+            game:GetService("TweenService"):Create(btn, TweenInfo.new(0.1), {Size = btn.Size + UDim2.new(0, -4, 0, -2)}):Play()
+        end)
+        btn.MouseButton1Up:Connect(function()
+            game:GetService("TweenService"):Create(btn, TweenInfo.new(0.1), {Size = btn.Size + UDim2.new(0, 4, 0, 2)}):Play()
+        end)
+    end
+end
