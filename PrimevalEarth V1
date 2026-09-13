@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã fix chuẩn hướng Auto Run & giữ nguyên vẹn script!",
+    Content = "✨ Đã fix Auto Target Kill đánh chuẩn như Auto Kill!",
     Duration = 5
 })
 
@@ -304,6 +304,7 @@ Tabs.Combat:Toggle({
     Default = false,
     Callback = function(Value)
         AutoKillActive = Value
+        if Value then AutoTargetKillActive = false end
         CurrentPersistentTarget = nil
         CombatState = 1
         WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
@@ -429,7 +430,7 @@ Tabs.Combat:Toggle({
     Default = false,
     Callback = function(Value)
         AutoTargetKillActive = Value
-        CurrentPersistentTarget = nil
+        if Value then AutoKillActive = false end
         CombatState = 1
         WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
@@ -634,6 +635,7 @@ RunService.RenderStepped:Connect(function(dt)
             CombatState = 1 
         end
 
+        -- KẾT HỢP AUTO KILL VÀ AUTO TARGET KILL DÙNG CHUNG CƠ CHẾ SĂN MỒI
         local targetHrp = nil
         if AutoTargetKillActive then
             targetHrp = GetSelectedPlayerTargetHRP()
