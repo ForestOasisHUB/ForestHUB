@@ -1,5 +1,5 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB - FINAL CLEAN VERSION)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - FIXED & FINAL)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã fix hoàn tất lỗi danh sách Player & ESP khi có người mới vào!",
+    Content = "✨ Đã chuyển sang WindUI và fix hoàn tất lỗi Dropdown/Auto Target!",
     Duration = 5
 })
 
@@ -119,7 +119,6 @@ local function UpdatePlayerESP()
         return 
     end
     
-    -- Xóa các ESP cũ để vẽ lại vị trí mới nhất của từng người chơi
     ClearESP()
     
     for _, player in ipairs(Players:GetPlayers()) do
@@ -299,8 +298,12 @@ Tabs.Combat:Dropdown({
     Values = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)"},
     Default = "Xoay vòng đối thủ",
     Callback = function(Value)
-        AttackModeOption = Value
-        WindUI:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. Value, Duration = 2})
+        if type(Value) == "table" then
+            AttackModeOption = Value[1] or "Xoay vòng đối thủ"
+        else
+            AttackModeOption = tostring(Value)
+        end
+        WindUI:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. AttackModeOption, Duration = 2})
     end
 })
 
@@ -392,7 +395,11 @@ PlayerListDropdown = Tabs.Combat:Dropdown({
     Values = GetPlayerNames(),
     Default = "",
     Callback = function(Value)
-        SelectedTargetPlayerName = Value
+        if type(Value) == "table" then
+            SelectedTargetPlayerName = Value[1]
+        else
+            SelectedTargetPlayerName = tostring(Value)
+        end
     end
 })
 
@@ -403,10 +410,9 @@ Tabs.Combat:Button({
             PlayerListDropdown:Refresh(GetPlayerNames())
         end)
         WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách player!", Duration = 2})
-    end
+    end,
 })
 
--- Tự động cập nhật danh sách player ngay lập tức khi có người vào/rời server
 local function RefreshDropdownList()
     pcall(function()
         if PlayerListDropdown then
@@ -430,7 +436,7 @@ Tabs.Combat:Button({
             hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
             WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
         else
-            WindUI:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy người chơi này!", Duration = 2})
+            WindUI:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy người chơi này hoặc chưa chọn!", Duration = 2})
         end
     end
 })
@@ -536,7 +542,7 @@ Tabs.Settings:Button({
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Better-Fly-GUI-44304"))()
         end)
         WindUI:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4!", Duration = 3})
-    end
+    end,
 })
 
 local ESPUpdateTimer = 0
@@ -567,21 +573,24 @@ RunService.RenderStepped:Connect(function(dt)
         end)
         
         local currentTime = tick()
-        
         local globalTargetHrp = GetNearestGlobalTarget()
         
-        -- AUTO AIM (KHÓA CỰC CHẮC VÀO MỤC TIÊU GẦN NHẤT)
+        -- AUTO AIM (KHÓA CHUẨN XÁC VÀO ĐẦU HOẶC THÂN MỤC TIÊU)
         if AutoAimActive and globalTargetHrp then
             pcall(function()
-                local targetHead = globalTargetHrp.Parent and globalTargetHrp.Parent:FindFirstChild("Head")
-                local lookTarget = targetHead or globalTargetHrp
-                local targetPos = lookTarget.Position
-                local desiredCF = CFrame.new(Camera.CFrame.Position, targetPos)
-                Camera.CFrame = Camera.CFrame:Lerp(desiredCF, 1)
+                local targetChar = globalTargetHrp.Parent
+                if targetChar then
+                    local targetPart = targetChar:FindFirstChild("Head") or globalTargetHrp
+                    local targetPos = targetPart.Position
+                    
+                    local currentCamCF = Camera.CFrame
+                    local targetLookCF = CFrame.new(currentCamCF.Position, targetPos)
+                    Camera.CFrame = currentCamCF:Lerp(targetLookCF, 0.4)
+                end
             end)
         end
 
-        -- AUTO RUN (FIX CHUẨN XÁC HƯỚNG TIẾN TỚI ĐỐI THỦ)
+        -- AUTO RUN
         if AutoRunActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             pcall(function()
                 local rawDirection = (globalTargetHrp.Position - hrp.Position)
@@ -599,7 +608,7 @@ RunService.RenderStepped:Connect(function(dt)
             end)
         end
 
-        -- AUTO ATTACK (TỰ ĐỘNG CẮN NẾU TRONG KHOẢNG CÁCH <= 25)
+        -- AUTO ATTACK
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
             if dist <= 25 then 
@@ -645,7 +654,6 @@ RunService.RenderStepped:Connect(function(dt)
             CombatState = 1 
         end
 
-        -- KẾT HỢP AUTO KILL VÀ AUTO TARGET KILL DÙNG CHUNG CƠ CHẾ SĂN MỒI
         local targetHrp = nil
         if AutoTargetKillActive then
             targetHrp = GetSelectedPlayerTargetHRP()
