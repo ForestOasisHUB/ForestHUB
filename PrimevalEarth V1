@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã fix Auto Target Kill đánh chuẩn như Auto Kill!",
+    Content = "✨ Đã fix hoàn tất lỗi danh sách Player & ESP khi có người mới vào!",
     Duration = 5
 })
 
@@ -101,10 +101,10 @@ local function UpdateFarmStatus()
 end
 
 -- ========================================================
--- PLAYER ESP SYSTEM
+-- PLAYER ESP SYSTEM (FIXED & REALTIME)
 -- ========================================================
 local ESPEnabled = false
-local ESPFolder = Instance.new("Folder", Workspace)
+local ESPFolder = Workspace:FindFirstChild("ForestHub_ESP_Folder") or Instance.new("Folder", Workspace)
 ESPFolder.Name = "ForestHub_ESP_Folder"
 
 local function ClearESP()
@@ -114,8 +114,13 @@ local function ClearESP()
 end
 
 local function UpdatePlayerESP()
+    if not ESPEnabled then 
+        ClearESP()
+        return 
+    end
+    
+    -- Xóa các ESP cũ để vẽ lại vị trí mới nhất của từng người chơi
     ClearESP()
-    if not ESPEnabled then return end
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
@@ -395,18 +400,23 @@ Tabs.Combat:Button({
     Title = "🔄 Refresh Danh Sách Player",
     Callback = function()
         pcall(function()
-            PlayerListDropdown:SetValues(GetPlayerNames())
+            PlayerListDropdown:Refresh(GetPlayerNames())
         end)
-        WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách!", Duration = 2})
+        WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách player!", Duration = 2})
     end
 })
 
-Players.PlayerAdded:Connect(function()
-    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
-end)
-Players.PlayerRemoving:Connect(function()
-    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
-end)
+-- Tự động cập nhật danh sách player ngay lập tức khi có người vào/rời server
+local function RefreshDropdownList()
+    pcall(function()
+        if PlayerListDropdown then
+            PlayerListDropdown:Refresh(GetPlayerNames())
+        end
+    end)
+end
+
+Players.PlayerAdded:Connect(RefreshDropdownList)
+Players.PlayerRemoving:Connect(RefreshDropdownList)
 
 Tabs.Combat:Button({
     Title = "🚀 Teleport Tới Người Chơi Đã Chọn",
