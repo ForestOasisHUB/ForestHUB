@@ -1,34 +1,33 @@
 -- ========================================================
--- PRIMEVAL EARTH | RAYFIELD UI (FORESTHUB - FIXED AUTO RUN DIRECTION REVERSE)
+-- PRIMEVAL EARTH | RAYFIELD UI (FORESTHUB)
 -- ========================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
-    LoadingTitle = "✨ ForestHUB Initialized!",
+    Name = "🌿 Primeval Earth | 🌟 ForestHUB On Top",
+    LoadingTitle = "ForestHUB Loading...",
     LoadingSubtitle = "by Official Team Forest",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "ForestHubConfigs",
-        FileName = "PrimevalEarthConfig"
+        FileName = "PrimevalEarth"
     },
-    KeySystem = false,
+    KeySystem = false
 })
 
 Rayfield:Notify({
-    Title = "🦖 ForestHUB Ready!",
-    Content = "✨ Đã sửa lỗi Auto Run chạy ngược, giờ chạy thẳng chuẩn xác vào mục tiêu!",
+    Title = "🌿 ForestHUB Initialized!",
+    Content = "✨ Đã chuyển sang giao diện Rayfield thành công!",
     Duration = 5,
-    Image = 4483362458,
+    Image = 4483362458
 })
 
-local Tabs = {
-    Combat = Window:CreateTab("⚔️ Combat Hub", 4483362458),
-    Farm = Window:CreateTab("🌾 Auto Farm Route", 4483362458),
-    Player = Window:CreateTab("🛡️ Player & ESP", 4483362458),
-    Settings = Window:CreateTab("⚙️ Settings & UI", 4483362458)
-}
+-- Tạo các Tab
+local CombatTab = Window:CreateTab("⚔️ Combat Hub", 4483362458)
+local FarmTab = Window:CreateTab("🌾 Auto Farm Route", 4483362458)
+local PlayerTab = Window:CreateTab("🛡️ Player & ESP", 4483362458)
+local SettingsTab = Window:CreateTab("⚙️ Settings & UI", 4483362458)
 
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
@@ -48,7 +47,6 @@ local AutoAimActive = false
 local AutoRunActive = false
 local AutoAttackActive = false
 
--- ĐẶT MẶC ĐỊNH SPEED LÀ 70
 local CustomSpeed = 70      
 local CustomJumpPower = 50  
 local OrbitRadius = 1.0      
@@ -90,14 +88,14 @@ local FarmPoints = {
 }
 local farmIndex = 1
 local farmTimer = 0
-local FarmParagraphLabel = nil
+local FarmParagraph = nil
 
 local function UpdateFarmStatus()
-    if not FarmParagraphLabel then return end
+    if not FarmParagraph then return end
     local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
     local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
-        FarmParagraphLabel:Set(content)
+        FarmParagraph:Set({ Title = "📊 Tiến Độ Lộ Trình Hiện Tại", Content = content })
     end)
 end
 
@@ -285,37 +283,33 @@ end
 -- ========================================================
 -- RAYFIELD ELEMENTS (COMBAT TAB)
 -- ========================================================
-Tabs.Combat:CreateSection("🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI")
+CombatTab:CreateSection("🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI")
 
-Tabs.Combat:CreateParagraph({
-    Title = "Trạng thái",
-    Content = "• Đã fix hướng Auto Run chạy chuẩn xác trực diện vào đối thủ (đã đảo hướng vector)."
-})
-
-Tabs.Combat:CreateDropdown({
+CombatTab:CreateDropdown({
     Name = "⚔️ Tùy Chọn Cách Đánh",
     Options = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)"},
-    CurrentOption = {"Xoay vòng đối thủ"},
+    CurrentOption = "Xoay vòng đối thủ",
     Flag = "AttackMode",
-    Callback = function(Option)
-        AttackModeOption = Option[1]
-        Rayfield:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. AttackModeOption, Duration = 2})
+    Callback = function(Value)
+        AttackModeOption = Value
+        Rayfield:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. Value, Duration = 2})
     end
 })
 
-Tabs.Combat:CreateToggle({
+CombatTab:CreateToggle({
     Name = "⚡ Auto Kill (Bám Cắn Mục Tiêu Đến Chết)",
     CurrentValue = false,
     Flag = "AutoKill",
     Callback = function(Value)
         AutoKillActive = Value
+        if Value then AutoTargetKillActive = false end
         CurrentPersistentTarget = nil
         CombatState = 1
         Rayfield:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateToggle({
+CombatTab:CreateToggle({
     Name = "🛡️ Tự động bay lên trời trốn khi máu < 25%",
     CurrentValue = false,
     Flag = "EmergencyEscape",
@@ -325,21 +319,20 @@ Tabs.Combat:CreateToggle({
     end
 })
 
-Tabs.Combat:CreateSlider({
+CombatTab:CreateSlider({
     Name = "🎯 Khoảng cách bám (Orbit Distance)",
     Range = {0, 100},
     Increment = 0.5,
-    Suffix = "Studs",
     CurrentValue = 1.0,
-    Flag = "OrbitDistance",
+    Flag = "OrbitDist",
     Callback = function(Value)
         OrbitRadius = Value
     end
 })
 
-Tabs.Combat:CreateSection("🎯 GLOBAL AUTO AIM & CHASE")
+CombatTab:CreateSection("🎯 GLOBAL AUTO AIM & CHASE")
 
-Tabs.Combat:CreateToggle({
+CombatTab:CreateToggle({
     Name = "🎯 Bật Auto Aim (Khóa Cực Chắc)",
     CurrentValue = false,
     Flag = "AutoAim",
@@ -349,8 +342,8 @@ Tabs.Combat:CreateToggle({
     end
 })
 
-Tabs.Combat:CreateToggle({
-    Name = "🏃‍♂️ Auto Run (Chạy chuẩn xác thẳng về phía trước tới đối thủ)",
+CombatTab:CreateToggle({
+    Name = "🏃‍♂️ Auto Run (Chạy thẳng chuẩn xác tới đối thủ)",
     CurrentValue = false,
     Flag = "AutoRun",
     Callback = function(Value)
@@ -359,7 +352,7 @@ Tabs.Combat:CreateToggle({
     end
 })
 
-Tabs.Combat:CreateToggle({
+CombatTab:CreateToggle({
     Name = "🦷 Auto Attack (Tự động cắn mục tiêu Aim)",
     CurrentValue = false,
     Flag = "AutoAttack",
@@ -369,7 +362,7 @@ Tabs.Combat:CreateToggle({
     end
 })
 
-Tabs.Combat:CreateSection("🎯 CHỌN MỤC TIÊU RIÊNG & TELEPORT")
+CombatTab:CreateSection("🎯 CHỌN MỤC TIÊU RIÊNG & TELEPORT")
 
 local function GetPlayerNames()
     local list = {}
@@ -382,34 +375,34 @@ local function GetPlayerNames()
     return list
 end
 
-local PlayerListDropdown = Tabs.Combat:CreateDropdown({
+local PlayerListDropdown = CombatTab:CreateDropdown({
     Name = "👥 Chọn Người Chơi",
     Options = GetPlayerNames(),
-    CurrentOption = {""},
+    CurrentOption = "",
     Flag = "SelectedPlayer",
-    Callback = function(Option)
-        SelectedTargetPlayerName = Option[1]
+    Callback = function(Value)
+        SelectedTargetPlayerName = Value
     end
 })
 
-Tabs.Combat:CreateButton({
+CombatTab:CreateButton({
     Name = "🔄 Refresh Danh Sách Player",
     Callback = function()
         pcall(function()
-            PlayerListDropdown:Refresh(GetPlayerNames(), true)
+            PlayerListDropdown:Refresh(GetPlayerNames())
         end)
         Rayfield:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách!", Duration = 2})
     end
 })
 
 Players.PlayerAdded:Connect(function()
-    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames(), true) end)
+    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
 end)
 Players.PlayerRemoving:Connect(function()
-    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames(), true) end)
+    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
 end)
 
-Tabs.Combat:CreateButton({
+CombatTab:CreateButton({
     Name = "🚀 Teleport Tới Người Chơi Đã Chọn",
     Callback = function()
         local char = LocalPlayer.Character
@@ -426,21 +419,19 @@ Tabs.Combat:CreateButton({
     end
 })
 
-Tabs.Combat:CreateToggle({
+CombatTab:CreateToggle({
     Name = "🎯 Auto Target Kill (Cắn Người Được Chọn Tới Chết)",
     CurrentValue = false,
     Flag = "AutoTargetKill",
     Callback = function(Value)
         AutoTargetKillActive = Value
-        CurrentPersistentTarget = nil
+        if Value then AutoKillActive = false end
         CombatState = 1
         Rayfield:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:CreateSection("⚙️ CÀI ĐẶT CAMERA")
-
-Tabs.Combat:CreateToggle({
+CombatTab:CreateToggle({
     Name = "🛡️ Anti-Shake Camera",
     CurrentValue = false,
     Flag = "AntiShake",
@@ -453,12 +444,12 @@ Tabs.Combat:CreateToggle({
 -- ========================================================
 -- RAYFIELD ELEMENTS (AUTO FARM TAB)
 -- ========================================================
-Tabs.Farm:CreateSection("🌟 LỘ TRÌNH FARM TỰ ĐỘNG")
+FarmTab:CreateSection("🌟 LỘ TRÌNH FARM TỰ ĐỘNG")
 
-Tabs.Farm:CreateToggle({
+FarmTab:CreateToggle({
     Name = "🚀 Bật/Tắt Auto Farm Route",
     CurrentValue = false,
-    Flag = "AutoFarmRoute",
+    Flag = "AutoFarm",
     Callback = function(Value)
         IsAutoFarmRunning = Value
         if Value then
@@ -469,7 +460,7 @@ Tabs.Farm:CreateToggle({
     end
 })
 
-FarmParagraphLabel = Tabs.Farm:CreateParagraph({
+FarmParagraph = FarmTab:CreateParagraph({
     Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
     Content = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
 })
@@ -477,12 +468,12 @@ FarmParagraphLabel = Tabs.Farm:CreateParagraph({
 -- ========================================================
 -- RAYFIELD ELEMENTS (PLAYER & ESP TAB)
 -- ========================================================
-Tabs.Player:CreateSection("👁️ HỆ THỐNG ESP & TẦM NHÌN")
+PlayerTab:CreateSection("👁️ HỆ THỐNG ESP & TẦM NHÌN")
 
-Tabs.Player:CreateToggle({
+PlayerTab:CreateToggle({
     Name = "👀 Player ESP (Xuyên Tường & Máu)",
     CurrentValue = false,
-    Flag = "PlayerESP",
+    Flag = "ESP",
     Callback = function(Value)
         ESPEnabled = Value
         if not ESPEnabled then ClearESP() end
@@ -493,33 +484,31 @@ Tabs.Player:CreateToggle({
 -- ========================================================
 -- SETTINGS TAB
 -- ========================================================
-Tabs.Settings:CreateSection("⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH")
+SettingsTab:CreateSection("⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH")
 
-Tabs.Settings:CreateSlider({
+SettingsTab:CreateSlider({
     Name = "🚀 WalkSpeed (Tốc độ chạy)",
     Range = {16, 1000},
     Increment = 1,
-    Suffix = "Speed",
     CurrentValue = 70,
-    Flag = "WalkSpeedSlider",
+    Flag = "SpeedSlider",
     Callback = function(Value)
         CustomSpeed = Value
     end
 })
 
-Tabs.Settings:CreateSlider({
+SettingsTab:CreateSlider({
     Name = "🦘 JumpPower (Độ cao nhảy)",
     Range = {0, 200},
     Increment = 1,
-    Suffix = "Power",
     CurrentValue = 50,
-    Flag = "JumpPowerSlider",
+    Flag = "JumpSlider",
     Callback = function(Value)
         CustomJumpPower = Value
     end
 })
 
-Tabs.Settings:CreateButton({
+SettingsTab:CreateButton({
     Name = "🦅 Bật Fly GUI V4",
     Callback = function()
         pcall(function()
@@ -557,31 +546,8 @@ RunService.RenderStepped:Connect(function(dt)
         end)
         
         local currentTime = tick()
-        local myHealthPercent = humanoid.Health / humanoid.MaxHealth
-        
-        -- ========================================================
-        -- 1. ƯU TIÊN SỐ 1: KIỂM TRA MÁY YẾU (< 25%) ĐỂ TRỐN NGAY LẬP TỨC
-        -- ========================================================
-        if EmergencyEscapeToggle and myHealthPercent <= 0.25 and myHealthPercent > 0 then
-            local targetHrpForEscape = nil
-            if AutoTargetKillActive then
-                targetHrpForEscape = GetSelectedPlayerTargetHRP()
-            elseif AutoKillActive or AutoAimActive then
-                targetHrpForEscape = GetNearestGlobalTarget()
-            end
-            
-            local escapeRefPos = targetHrpForEscape and targetHrpForEscape.Position or hrp.Position
-            local escapePos = escapeRefPos + Vector3.new(0, SafeHeight, 0)
-            hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
-            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            return 
-        end
-        
         local globalTargetHrp = GetNearestGlobalTarget()
         
-        -- ========================================================
-        -- 2. AUTO AIM
-        -- ========================================================
         if AutoAimActive and globalTargetHrp then
             pcall(function()
                 local targetHead = globalTargetHrp.Parent and globalTargetHrp.Parent:FindFirstChild("Head")
@@ -592,15 +558,11 @@ RunService.RenderStepped:Connect(function(dt)
             end)
         end
 
-        -- ========================================================
-        -- 3. AUTO RUN (FIX CHUẨN XÁC: LAO THẲNG VỀ PHÍA TRƯỚC TỚI ĐỐI THỦ)
-        -- ========================================================
         if AutoRunActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             pcall(function()
                 local rawDirection = (globalTargetHrp.Position - hrp.Position)
                 local flatDir = Vector3.new(rawDirection.X, 0, rawDirection.Z)
                 
-                -- Đổi chiều hướng di chuyển từ hướng đối thủ quy về góc nhìn cục bộ của nhân vật để nhân vật luôn tiến tới trước
                 local localMoveDir = hrp.CFrame:VectorToObjectSpace(flatDir)
                 if localMoveDir.Magnitude > 0.01 then
                     humanoid:Move(localMoveDir.Unit, true)
@@ -608,28 +570,21 @@ RunService.RenderStepped:Connect(function(dt)
                     humanoid:Move(Vector3.new(0, 0, -1), true)
                 end
                 
-                -- Luôn luôn xoay mặt đối diện thẳng vào đối thủ để sẵn sàng cắn
                 local lookAtTarget = CFrame.new(hrp.Position, Vector3.new(globalTargetHrp.Position.X, hrp.Position.Y, globalTargetHrp.Position.Z))
                 hrp.CFrame = hrp.CFrame:Lerp(lookAtTarget, 0.25)
             end)
         end
 
-        -- ========================================================
-        -- 4. AUTO ATTACK (CẮN LIÊN TỤC NGAY KHI TRONG TẦM TẤN CÔNG)
-        -- ========================================================
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
-            if dist <= 30 then 
-                if currentTime - LastAttackTick >= 0.01 then
+            if dist <= 25 then 
+                if currentTime - LastAttackTick >= 0.02 then
                     LastAttackTick = currentTime
                     PerformAttack(globalTargetHrp.Parent)
                 end
             end
         end
         
-        -- ========================================================
-        -- 5. ANTI SHAKE CAMERA
-        -- ========================================================
         if AntiShakeCameraActive and not AutoAimActive then
             local currentCamCF = Camera.CFrame
             if not LockedCameraPosition then
@@ -642,9 +597,6 @@ RunService.RenderStepped:Connect(function(dt)
             LockedCameraPosition = nil
         end
         
-        -- ========================================================
-        -- 6. AUTO FARM ROUTE
-        -- ========================================================
         if IsAutoFarmRunning then
             local targetPos = FarmPoints[farmIndex]
             hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
@@ -659,9 +611,14 @@ RunService.RenderStepped:Connect(function(dt)
             return 
         end
         
-        -- ========================================================
-        -- 7. AUTO KILL & AUTO TARGET KILL (ORBIT & ATTACK)
-        -- ========================================================
+        local myHealthPercent = humanoid.Health / humanoid.MaxHealth
+        
+        if EmergencyEscapeToggle and myHealthPercent <= 0.25 and myHealthPercent > 0 then
+            CombatState = 2 
+        elseif myHealthPercent >= 0.70 or not EmergencyEscapeToggle then
+            CombatState = 1 
+        end
+
         local targetHrp = nil
         if AutoTargetKillActive then
             targetHrp = GetSelectedPlayerTargetHRP()
@@ -676,29 +633,35 @@ RunService.RenderStepped:Connect(function(dt)
             local targetHum = targetChar:FindFirstChildOfClass("Humanoid")
             
             if targetHum and targetHum.Health > 0 then
-                local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
-                local predictionFactor = 0.08
-                local predictedPos = targetHrp.Position + (targetVelocity * predictionFactor)
-                
-                local strictLockPos = predictedPos
-                
-                if AttackModeOption == "Xoay vòng đối thủ" then
-                    OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
-                    local offsetX = math.cos(OrbitAngle) * OrbitRadius
-                    local offsetZ = math.sin(OrbitAngle) * OrbitRadius
-                    strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
-                else
-                    local lookVector = targetHrp.CFrame.LookVector
-                    strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
-                end
-                
-                hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
-                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                if CombatState == 1 then
+                    local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                    local predictionFactor = 0.08
+                    local predictedPos = targetHrp.Position + (targetVelocity * predictionFactor)
+                    
+                    local strictLockPos = predictedPos
+                    
+                    if AttackModeOption == "Xoay vòng đối thủ" then
+                        OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
+                        local offsetX = math.cos(OrbitAngle) * OrbitRadius
+                        local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                        strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                    else
+                        local lookVector = targetHrp.CFrame.LookVector
+                        strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
+                    end
+                    
+                    hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
-                if currentDistToTarget <= 35 and (currentTime - LastAttackTick >= 0.005) then
-                    LastAttackTick = currentTime
-                    PerformAttack(targetChar)
+                    local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
+                    if currentDistToTarget <= 35 and (currentTime - LastAttackTick >= 0.005) then
+                        LastAttackTick = currentTime
+                        PerformAttack(targetChar)
+                    end
+                else
+                    local escapePos = targetHrp.Position + Vector3.new(0, SafeHeight, 0)
+                    hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
             else
                 CurrentPersistentTarget = nil
