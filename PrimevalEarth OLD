@@ -1,13 +1,13 @@
 -- ========================================================
--- PRIMEVAL EARTH | RAYFIELD UI (FORESTHUB - FIXED & FINAL)
+-- PRIMEVAL EARTH | RAYFIELD (FORESTHUB - FIXED & FINAL)
 -- ========================================================
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
     Name = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
-    LoadingTitle = "✨ Đang khởi động ForestHUB...",
-    LoadingSubtitle = "✨ Official Team Forest ✨",
+    LoadingTitle = "ForestHUB is Loading...",
+    LoadingSubtitle = "by Official Team Forest",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "ForestHubConfigs",
@@ -18,14 +18,15 @@ local Window = Rayfield:CreateWindow({
 
 Rayfield:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã fix lỗi Dropdown cách đánh & Auto Target thành công!",
+    Content = "✨ Đã chuyển sang Rayfield UI, tích hợp đầy đủ Survival & Auto Meat thông minh!",
     Duration = 5,
     Image = 4483362458,
 })
 
--- Tạo các Tab
+-- Tạo các Tab chính
 local Tabs = {
     Combat = Window:CreateTab("⚔️ Combat Hub", 4483362458),
+    Survival = Window:CreateTab("🍖 Survival Hub", 4483362458), 
     Farm = Window:CreateTab("🌾 Auto Farm Route", 4483362458),
     Player = Window:CreateTab("🛡️ Player & ESP", 4483362458),
     Settings = Window:CreateTab("⚙️ Settings & UI", 4483362458)
@@ -49,6 +50,11 @@ local AutoAimActive = false
 local AutoRunActive = false
 local AutoAttackActive = false
 
+-- Biến sinh tồn (Survival States)
+local AutoGrassActive = false     
+local AutoMeatActive = false      
+local AutoDrinkActive = false     
+
 -- ĐẶT MẶC ĐỊNH SPEED LÀ 70
 local CustomSpeed = 70      
 local CustomJumpPower = 50  
@@ -67,10 +73,18 @@ local CurrentPersistentTarget = nil
 local CombatState = 1 
 
 local CombatRemotes = {}
+local SurvivalRemotes = {}
+
 pcall(function()
     for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
-        if v:IsA("RemoteEvent") and (v.Name:lower():find("attack") or v.Name:lower():find("bite") or v.Name:lower():find("hit") or v.Name:lower():find("combat") or v.Name:lower():find("damage") or v.Name:lower():find("melee")) then
-            table.insert(CombatRemotes, v)
+        if v:IsA("RemoteEvent") then
+            local name = v.Name:lower()
+            if name:find("attack") or name:find("bite") or name:find("hit") or name:find("combat") or name:find("damage") or name:find("melee") then
+                table.insert(CombatRemotes, v)
+            end
+            if name:find("eat") or name:find("feed") or name:find("drink") or name:find("water") or name:find("consume") or name:find("food") then
+                table.insert(SurvivalRemotes, v)
+            end
         end
     end
 end)
@@ -91,15 +105,71 @@ local FarmPoints = {
 }
 local farmIndex = 1
 local farmTimer = 0
-local FarmLabel = nil
+local FarmParagraphElement = nil
 
 local function UpdateFarmStatus()
-    if not FarmLabel then return end
+    if not FarmParagraphElement then return end
     local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
-    local content = string.format("Trạng thái: %s | Điểm số: %d / %d\n(✨ Đứng chờ 10.5s mỗi điểm)", statusText, farmIndex, #FarmPoints)
+    local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
-        FarmLabel:Set(content)
+        FarmParagraphElement:Set(content)
     end)
+end
+
+-- ========================================================
+-- SURVIVAL HELPER FUNCTIONS
+-- ========================================================
+local GrassPoints = {
+    Vector3.new(-33.2, 103.7, 424.2),
+    Vector3.new(1121.9, 61.9, -1209.5),
+    Vector3.new(1446.5, 77.1, -677.8),
+    Vector3.new(273.3, 74.4, -1028.7),
+    Vector3.new(-617.3, 146.4, -1127.9),
+    Vector3.new(-510.2, 77.7, -430.4),
+    Vector3.new(1086.6, 70.4, 463.8)
+}
+local grassIndex = 1
+local grassTimer = 0
+
+local WaterPoints = {
+    Vector3.new(1376.3, 61.6, -994.9),   
+}
+local LockedWaterCFrame = nil 
+
+local function PressKeyE()
+    pcall(function()
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        task.wait(0.01)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+    end)
+end
+
+local function ClickFixedScreenWater()
+    pcall(function()
+        local viewportSize = Camera.ViewportSize
+        local fixedX = viewportSize.X / 2 + 30
+        local fixedY = viewportSize.Y / 2 - 20
+        
+        VirtualInputManager:SendMouseButtonEvent(fixedX, fixedY, 0, true, game, 0)
+        task.wait(0.02)
+        VirtualInputManager:SendMouseButtonEvent(fixedX, fixedY, 0, false, game, 0)
+    end)
+end
+
+local function GetAllMeatParts()
+    local meatList = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            local name = obj.Name:lower()
+            if name:find("meat") or name:find("corpse") or name:find("food") or name:find("carcass") or name:find("flesh") or name:find("chunk") or name:find("item") or name:find("drop") or name:find("bone") or name:find("prey") or name:find("steak") or name:find("gibs") then
+                local targetPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+                if targetPart then
+                    table.insert(meatList, targetPart)
+                end
+            end
+        end
+    end
+    return meatList
 end
 
 -- ========================================================
@@ -241,7 +311,6 @@ local function GetSelectedPlayerTargetHRP()
     
     local targetPlayer = nil
     for _, p in ipairs(Players:GetPlayers()) do
-        -- So khớp chính xác cả tên đăng nhập (Name) và tên hiển thị (DisplayName)
         if p.Name == SelectedTargetPlayerName or p.DisplayName == SelectedTargetPlayerName then
             targetPlayer = p
             break
@@ -291,22 +360,24 @@ end
 -- ========================================================
 -- RAYFIELD ELEMENTS (COMBAT TAB)
 -- ========================================================
-Tabs.Combat:CreateSection("🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI")
+Tabs.Combat:CreateParagraph({
+    Title = "🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI",
+    Content = "• Auto Aim, Auto Run & Auto Attack hoạt động hoàn hảo."
+})
 
 Tabs.Combat:CreateDropdown({
     Name = "⚔️ Tùy Chọn Cách Đánh",
     Options = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)"},
-    CurrentOption = {"Xoay vòng đối thủ"},
+    CurrentOption = "Xoay vòng đối thủ",
     Flag = "AttackMode",
-    Callback = function(Option)
-        -- Xử lý an toàn nhận giá trị từ bảng của Rayfield Dropdown
-        if type(Option) == "table" then
-            AttackModeOption = Option[1] or "Xoay vòng đối thủ"
+    Callback = function(Value)
+        if type(Value) == "table" then
+            AttackModeOption = Value[1] or "Xoay vòng đối thủ"
         else
-            AttackModeOption = tostring(Option)
+            AttackModeOption = tostring(Value)
         end
         Rayfield:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. AttackModeOption, Duration = 2})
-    end,
+    end
 })
 
 Tabs.Combat:CreateToggle({
@@ -319,7 +390,7 @@ Tabs.Combat:CreateToggle({
         CurrentPersistentTarget = nil
         CombatState = 1
         Rayfield:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
-    end,
+    end
 })
 
 Tabs.Combat:CreateToggle({
@@ -329,7 +400,7 @@ Tabs.Combat:CreateToggle({
     Callback = function(Value)
         EmergencyEscapeToggle = Value
         Rayfield:Notify({Title = "🛡️ Né Máu Yếu", Content = Value and "Đã Bật tính năng trốn!" or "Đã Tắt tính năng trốn!", Duration = 2})
-    end,
+    end
 })
 
 Tabs.Combat:CreateSlider({
@@ -341,10 +412,15 @@ Tabs.Combat:CreateSlider({
     Flag = "OrbitDistance",
     Callback = function(Value)
         OrbitRadius = Value
-    end,
+    end
 })
 
-Tabs.Combat:CreateSection("🎯 GLOBAL AUTO AIM & CHASE")
+Tabs.Combat:CreateDivider()
+
+Tabs.Combat:CreateParagraph({
+    Title = "🎯 GLOBAL AUTO AIM & CHASE",
+    Content = "Quét toàn bản đồ, tự động aim cực chắc, chạy tới và cắn mục tiêu."
+})
 
 Tabs.Combat:CreateToggle({
     Name = "🎯 Bật Auto Aim (Khóa Cực Chắc)",
@@ -353,7 +429,7 @@ Tabs.Combat:CreateToggle({
     Callback = function(Value)
         AutoAimActive = Value
         Rayfield:Notify({Title = "🎯 Auto Aim", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
-    end,
+    end
 })
 
 Tabs.Combat:CreateToggle({
@@ -363,7 +439,7 @@ Tabs.Combat:CreateToggle({
     Callback = function(Value)
         AutoRunActive = Value
         Rayfield:Notify({Title = "🏃‍♂️ Auto Run", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
-    end,
+    end
 })
 
 Tabs.Combat:CreateToggle({
@@ -373,11 +449,17 @@ Tabs.Combat:CreateToggle({
     Callback = function(Value)
         AutoAttackActive = Value
         Rayfield:Notify({Title = "🦷 Auto Attack", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
-    end,
+    end
 })
 
-Tabs.Combat:CreateSection("🎯 CHỌN MỤC TIÊU RIÊNG & TELEPORT")
+Tabs.Combat:CreateDivider()
 
+Tabs.Combat:CreateParagraph({
+    Title = "🎯 CHỌN MỤC TIÊU RIÊNG & TELEPORT",
+    Content = "Chọn tên người chơi muốn truy sát trực tiếp."
+})
+
+local PlayerListDropdown = nil
 local function GetPlayerNames()
     local list = {}
     for _, p in ipairs(Players:GetPlayers()) do
@@ -389,18 +471,18 @@ local function GetPlayerNames()
     return list
 end
 
-local PlayerListDropdown = Tabs.Combat:CreateDropdown({
+PlayerListDropdown = Tabs.Combat:CreateDropdown({
     Name = "👥 Chọn Người Chơi",
     Options = GetPlayerNames(),
-    CurrentOption = {""},
+    CurrentOption = GetPlayerNames()[1] or "",
     Flag = "SelectedPlayer",
-    Callback = function(Option)
-        if type(Option) == "table" then
-            SelectedTargetPlayerName = Option[1]
+    Callback = function(Value)
+        if type(Value) == "table" then
+            SelectedTargetPlayerName = Value[1]
         else
-            SelectedTargetPlayerName = tostring(Option)
+            SelectedTargetPlayerName = tostring(Value)
         end
-    end,
+    end
 })
 
 Tabs.Combat:CreateButton({
@@ -412,17 +494,6 @@ Tabs.Combat:CreateButton({
         Rayfield:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách player!", Duration = 2})
     end,
 })
-
-local function RefreshDropdownList()
-    pcall(function()
-        if PlayerListDropdown then
-            PlayerListDropdown:Refresh(GetPlayerNames())
-        end
-    end)
-end
-
-Players.PlayerAdded:Connect(RefreshDropdownList)
-Players.PlayerRemoving:Connect(RefreshDropdownList)
 
 Tabs.Combat:CreateButton({
     Name = "🚀 Teleport Tới Người Chơi Đã Chọn",
@@ -438,7 +509,7 @@ Tabs.Combat:CreateButton({
         else
             Rayfield:Notify({Title = "❌ Lỗi", Content = "Không tìm thấy người chơi này hoặc chưa chọn!", Duration = 2})
         end
-    end,
+    end
 })
 
 Tabs.Combat:CreateToggle({
@@ -450,8 +521,10 @@ Tabs.Combat:CreateToggle({
         if Value then AutoKillActive = false end
         CombatState = 1
         Rayfield:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
-    end,
+    end
 })
+
+Tabs.Combat:CreateDivider()
 
 Tabs.Combat:CreateToggle({
     Name = "🛡️ Anti-Shake Camera",
@@ -460,18 +533,60 @@ Tabs.Combat:CreateToggle({
     Callback = function(Value)
         AntiShakeCameraActive = Value
         LockedCameraPosition = nil
-    end,
+    end
+})
+
+-- ========================================================
+-- RAYFIELD ELEMENTS (SURVIVAL TAB)
+-- ========================================================
+Tabs.Survival:CreateParagraph({
+    Title = "🍖 HỆ THỐNG SINH TỒN (EAT & DRINK)",
+    Content = "• Auto Grass: Ăn cỏ tự động.\n• Auto Meat: Đứng ăn hết cục thịt hiện tại rồi mới chuyển sang cục tiếp theo.\n• Auto Drink: Khóa vị trí nước."
+})
+
+Tabs.Survival:CreateToggle({
+    Name = "🌿 Auto Grass (Ăn Cỏ)",
+    CurrentValue = false,
+    Flag = "AutoGrass",
+    Callback = function(Value)
+        AutoGrassActive = Value
+        if Value then grassIndex = 1 grassTimer = tick() end
+        Rayfield:Notify({Title = "🌿 Auto Grass", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+    end
+})
+
+Tabs.Survival:CreateToggle({
+    Name = "🥩 Auto Meat (Đứng Ăn Hết Cục Thịt Rồi Mới Đổi)",
+    CurrentValue = false,
+    Flag = "AutoMeat",
+    Callback = function(Value)
+        AutoMeatActive = Value
+        Rayfield:Notify({Title = "🥩 Auto Meat", Content = Value and "Đã bật: Đứng ăn hết cục thịt rồi mới chuyển!" or "Đã tắt!", Duration = 2})
+    end
+})
+
+Tabs.Survival:CreateToggle({
+    Name = "💧 Auto Drink Water (Khóa Cố Định Góc Nhìn Hồ Nước)",
+    CurrentValue = false,
+    Flag = "AutoDrink",
+    Callback = function(Value)
+        AutoDrinkActive = Value
+        Rayfield:Notify({Title = "💧 Auto Drink", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+    end
 })
 
 -- ========================================================
 -- RAYFIELD ELEMENTS (AUTO FARM TAB)
 -- ========================================================
-Tabs.Farm:CreateSection("🌟 LỘ TRÌNH FARM TỰ ĐỘNG")
+Tabs.Farm:CreateParagraph({
+    Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG",
+    Content = "Tự động dịch chuyển qua các khu vực nguyên thủy."
+})
 
 Tabs.Farm:CreateToggle({
     Name = "🚀 Bật/Tắt Auto Farm Route",
     CurrentValue = false,
-    Flag = "AutoFarm",
+    Flag = "AutoFarmRoute",
     Callback = function(Value)
         IsAutoFarmRunning = Value
         if Value then
@@ -479,15 +594,21 @@ Tabs.Farm:CreateToggle({
             farmTimer = tick()
         end
         UpdateFarmStatus()
-    end,
+    end
 })
 
-FarmLabel = Tabs.Farm:CreateLabel("Trạng thái: 🔴 ĐANG TẮT | Bấm bật để bắt đầu.")
+FarmParagraphElement = Tabs.Farm:CreateParagraph({
+    Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
+    Content = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
+})
 
 -- ========================================================
 -- RAYFIELD ELEMENTS (PLAYER & ESP TAB)
 -- ========================================================
-Tabs.Player:CreateSection("👁️ HỆ THỐNG ESP & TẦM NHÌN")
+Tabs.Player:CreateParagraph({
+    Title = "👁️ HỆ THỐNG ESP & TẦM NHÌN",
+    Content = "Hiển thị khung sáng xuyên tường và thanh máu."
+})
 
 Tabs.Player:CreateToggle({
     Name = "👀 Player ESP (Xuyên Tường & Máu)",
@@ -497,13 +618,16 @@ Tabs.Player:CreateToggle({
         ESPEnabled = Value
         if not ESPEnabled then ClearESP() end
         Rayfield:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật!" or "Đã tắt!", Duration = 2})
-    end,
+    end
 })
 
 -- ========================================================
 -- SETTINGS TAB
 -- ========================================================
-Tabs.Settings:CreateSection("⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH")
+Tabs.Settings:CreateParagraph({
+    Title = "⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH",
+    Content = "Tốc độ mặc định khởi tạo là 70."
+})
 
 Tabs.Settings:CreateSlider({
     Name = "🚀 WalkSpeed (Tốc độ chạy)",
@@ -511,10 +635,10 @@ Tabs.Settings:CreateSlider({
     Increment = 1,
     Suffix = "Speed",
     CurrentValue = 70,
-    Flag = "CustomWalkSpeed",
+    Flag = "WalkSpeedSlider",
     Callback = function(Value)
         CustomSpeed = Value
-    end,
+    end
 })
 
 Tabs.Settings:CreateSlider({
@@ -523,11 +647,13 @@ Tabs.Settings:CreateSlider({
     Increment = 1,
     Suffix = "Power",
     CurrentValue = 50,
-    Flag = "CustomJumpPower",
+    Flag = "JumpPowerSlider",
     Callback = function(Value)
         CustomJumpPower = Value
-    end,
+    end
 })
+
+Tabs.Settings:CreateDivider()
 
 Tabs.Settings:CreateButton({
     Name = "🦅 Bật Fly GUI V4",
@@ -540,6 +666,7 @@ Tabs.Settings:CreateButton({
 })
 
 local ESPUpdateTimer = 0
+local currentTargetMeat = nil 
 
 -- ========================================================
 -- MAIN LOOP
@@ -569,6 +696,103 @@ RunService.RenderStepped:Connect(function(dt)
         local currentTime = tick()
         local globalTargetHrp = GetNearestGlobalTarget()
         
+        -- 1. XỬ LÝ LOGIC SINH TỒN (AUTO GRASS, AUTO MEAT ĐỨNG ĂN HẾT, AUTO DRINK)
+        if AutoGrassActive then
+            LockedWaterCFrame = nil
+            currentTargetMeat = nil
+            local targetPos = GrassPoints[grassIndex]
+            if targetPos then
+                hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                PressKeyE()
+
+                if currentTime - grassTimer >= 5.0 then
+                    grassIndex = grassIndex + 1
+                    if grassIndex > #GrassPoints then grassIndex = 1 end
+                    grassTimer = currentTime
+                end
+            end
+            return
+            
+        elseif AutoMeatActive then
+            LockedWaterCFrame = nil
+            local allMeats = GetAllMeatParts()
+            
+            if currentTargetMeat then
+                local isValid = false
+                if currentTargetMeat.Parent and currentTargetMeat:IsA("BasePart") then
+                    isValid = true
+                elseif currentTargetMeat.Parent and currentTargetMeat:IsA("Model") then
+                    isValid = true
+                end
+                if not isValid then
+                    currentTargetMeat = nil
+                end
+            end
+            
+            if not currentTargetMeat then
+                local nearestMeat = nil
+                local shortestDist = math.huge
+                for _, meat in ipairs(allMeats) do
+                    local mPos = meat.Position or meat:GetPivot().Position
+                    local dist = (hrp.Position - mPos).Magnitude
+                    if dist < shortestDist then
+                        shortestDist = dist
+                        nearestMeat = meat
+                    end
+                end
+                currentTargetMeat = nearestMeat
+            end
+            
+            if currentTargetMeat then
+                local meatPos = currentTargetMeat.Position or currentTargetMeat:GetPivot().Position
+                hrp.CFrame = CFrame.new(meatPos + Vector3.new(0, 2, 0))
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                
+                PressKeyE()
+                for _, remote in ipairs(SurvivalRemotes) do
+                    local name = remote.Name:lower()
+                    if name:find("meat") or name:find("corpse") or name:find("feed") or name:find("food") then
+                        remote:FireServer(currentTargetMeat)
+                        remote:FireServer(currentTargetMeat.Parent)
+                    end
+                end
+            else
+                currentTargetMeat = nil
+            end
+            return
+            
+        elseif AutoDrinkActive then
+            currentTargetMeat = nil
+            local waterPos = WaterPoints[1]
+            if waterPos then
+                if not LockedWaterCFrame then
+                    LockedWaterCFrame = CFrame.new(waterPos + Vector3.new(0, 2, 0))
+                end
+                
+                hrp.CFrame = LockedWaterCFrame
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
+                local lookAtWaterCF = CFrame.new(Camera.CFrame.Position, waterPos)
+                Camera.CFrame = Camera.CFrame:Lerp(lookAtWaterCF, 0.3)
+                
+                PressKeyE()
+                ClickFixedScreenWater()
+                
+                for _, remote in ipairs(SurvivalRemotes) do
+                    local name = remote.Name:lower()
+                    if name:find("water") or name:find("drink") then
+                        remote:FireServer()
+                    end
+                end
+            end
+            return
+        else
+            LockedWaterCFrame = nil
+            currentTargetMeat = nil
+        end
+
         -- AUTO AIM (KHÓA CHUẨN XÁC VÀO ĐẦU HOẶC THÂN MỤC TIÊU)
         if AutoAimActive and globalTargetHrp then
             pcall(function()
