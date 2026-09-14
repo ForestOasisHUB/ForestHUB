@@ -18,7 +18,7 @@ local Window = Rayfield:CreateWindow({
 
 Rayfield:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã chuyển sang Rayfield UI, tích hợp đầy đủ Survival & Auto Meat thông minh!",
+    Content = "✨ Đã sửa lỗi Auto Kill & Auto Target, bám cắn mượt mà!",
     Duration = 5,
     Image = 4483362458,
 })
@@ -58,8 +58,8 @@ local AutoDrinkActive = false
 -- ĐẶT MẶC ĐỊNH SPEED LÀ 70
 local CustomSpeed = 70      
 local CustomJumpPower = 50  
-local OrbitRadius = 1.0      
-local OrbitSpeed = 120.0      
+local OrbitRadius = 2.0      
+local OrbitSpeed = 150.0      
 local SafeHeight = 150       
 
 local LastAttackTick = 0
@@ -408,7 +408,7 @@ Tabs.Combat:CreateSlider({
     Range = {0, 100},
     Increment = 0.5,
     Suffix = "Studs",
-    CurrentValue = 1.0,
+    CurrentValue = 2.0,
     Flag = "OrbitDistance",
     Callback = function(Value)
         OrbitRadius = Value
@@ -888,7 +888,7 @@ RunService.RenderStepped:Connect(function(dt)
             if targetHum and targetHum.Health > 0 then
                 if CombatState == 1 then
                     local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
-                    local predictionFactor = 0.08
+                    local predictionFactor = 0.06
                     local predictedPos = targetHrp.Position + (targetVelocity * predictionFactor)
                     
                     local strictLockPos = predictedPos
@@ -897,23 +897,24 @@ RunService.RenderStepped:Connect(function(dt)
                         OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
                         local offsetX = math.cos(OrbitAngle) * OrbitRadius
                         local offsetZ = math.sin(OrbitAngle) * OrbitRadius
-                        strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                        strictLockPos = predictedPos + Vector3.new(offsetX, 0.3, offsetZ)
                     else
                         local lookVector = targetHrp.CFrame.LookVector
-                        strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
+                        strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.3, 0)
                     end
                     
-                    hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
+                    -- Dùng CFrame mượt kết hợp Humanoid:Move để tránh bị giật physics của game
+                    hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(strictLockPos, targetHrp.Position), 0.5)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
                     local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
-                    if currentDistToTarget <= 35 and (currentTime - LastAttackTick >= 0.005) then
+                    if currentDistToTarget <= 40 and (currentTime - LastAttackTick >= 0.002) then
                         LastAttackTick = currentTime
                         PerformAttack(targetChar)
                     end
                 else
                     local escapePos = targetHrp.Position + Vector3.new(0, SafeHeight, 0)
-                    hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
+                    hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CForm.LookVector)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
             else
