@@ -1,32 +1,34 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB - REFRESH PLAYER LIST)
+-- PRIMEVAL EARTH | RAYFIELD (FORESTHUB - FIXED & FINAL)
 -- ========================================================
 
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local Window = WindUI:CreateWindow({
-    Title = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
-    Icon = "trees",
-    Author = "✨ Official Team Forest ✨",
-    Folder = "ForestHubConfigs",
-    Size = UDim2.fromOffset(580, 460),
-    Transparent = true,
-    Theme = "Plant", -- Tông màu Xanh lá chủ đạo siêu đẹp
-    SideBarWidth = 160,
-    HasOutline = true
+local Window = Rayfield:CreateWindow({
+    Name = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
+    LoadingTitle = "ForestHUB is Loading...",
+    LoadingSubtitle = "by Official Team Forest",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "ForestHubConfigs",
+        FileName = "PrimevalEarthConfig"
+    },
+    KeySystem = false,
 })
 
-WindUI:Notify({
+Rayfield:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Added player list refresh feature!",
-    Duration = 5
+    Content = "✨ Đã chuyển đổi sang Rayfield UI thành công!",
+    Duration = 5,
+    Image = 4483362458,
 })
 
+-- Tạo các Tab chính
 local Tabs = {
-    Combat = Window:Tab({ Title = "⚔️ Combat Hub", Icon = "swords" }),
-    Farm = Window:Tab({ Title = "🌾 Auto Farm Route", Icon = "map" }),
-    Player = Window:Tab({ Title = "🛡️ Player & ESP", Icon = "eye" }),
-    Settings = Window:Tab({ Title = "⚙️ Settings & UI", Icon = "settings" })
+    Combat = Window:CreateTab("⚔️ Combat Hub", 4483362458),
+    Farm = Window:CreateTab("🌾 Auto Farm Route", 4483362458),
+    Player = Window:CreateTab("🛡️ Player & ESP", 4483362458),
+    Settings = Window:CreateTab("⚙️ Settings & UI", 4483362458)
 }
 
 local Players = game:GetService("Players")
@@ -88,14 +90,14 @@ local FarmPoints = {
 }
 local farmIndex = 1
 local farmTimer = 0
-local FarmParagraph = nil
+local FarmParagraphElement = nil
 
 local function UpdateFarmStatus()
-    if not FarmParagraph then return end
+    if not FarmParagraphElement then return end
     local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
     local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
-        FarmParagraph:SetDesc(content)
+        FarmParagraphElement:Set(content)
     end)
 end
 
@@ -103,7 +105,7 @@ end
 -- PLAYER ESP SYSTEM
 -- ========================================================
 local ESPEnabled = false
-local ESPFolder = Instance.new("Folder", Workspace)
+local ESPFolder = Workspace:FindFirstChild("ForestHub_ESP_Folder") or Instance.new("Folder", Workspace)
 ESPFolder.Name = "ForestHub_ESP_Folder"
 
 local function ClearESP()
@@ -241,37 +243,41 @@ local function GetSelectedPlayerTargetHRP()
 end
 
 -- ========================================================
--- WINDUI ELEMENTS (COMBAT TAB)
+-- RAYFIELD ELEMENTS (COMBAT TAB)
 -- ========================================================
-Tabs.Combat:Paragraph({
+Tabs.Combat:CreateParagraph({
     Title = "🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI",
-    Desc = "• Bám sát mục tiêu thông minh\n• Cắn liên tục 10s & né tránh mượt mà 2s lên không trung."
+    Content = "• Bám sát mục tiêu thông minh\n• Cắn liên tục 10s & né tránh mượt mà 2s lên không trung."
 })
 
-Tabs.Combat:Toggle({
-    Title = "⚡ Auto Kill (Bám Sát & Cắn Toàn Bộ Mục Tiêu Gần)",
-    Default = false,
+Tabs.Combat:CreateToggle({
+    Name = "⚡ Auto Kill (Bám Sát & Cắn Toàn Bộ Mục Tiêu Gần)",
+    CurrentValue = false,
+    Flag = "AutoKill",
     Callback = function(Value)
         AutoKillActive = Value
         CombatState = 1
         StateTimer = 0
         LockedTarget = nil
-        WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+        Rayfield:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:Slider({
-    Title = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
-    Step = 0.1,
-    Value = { Min = 0, Max = 100, Default = 2 },
+Tabs.Combat:CreateSlider({
+    Name = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
+    Range = {0, 100},
+    Increment = 0.1,
+    Suffix = "Studs",
+    CurrentValue = 2,
+    Flag = "OrbitDistance",
     Callback = function(Value)
         OrbitRadius = Value
     end
 })
 
-Tabs.Combat:Divider()
+Tabs.Combat:CreateDivider()
 
-Tabs.Combat:Paragraph({
+Tabs.Combat:CreateParagraph({
     Title = "🎯 DỊCH CHUYỂN & CHỌN MỤC TIÊU RIÊNG",
     Desc = "Chọn đúng tên người chơi bạn muốn truy sát bên dưới."
 })
@@ -288,45 +294,49 @@ local function GetPlayerNames()
     return list
 end
 
-PlayerListDropdown = Tabs.Combat:Dropdown({
-    Title = "👥 Chọn Người Chơi",
-    Values = GetPlayerNames(),
-    Default = "",
+PlayerListDropdown = Tabs.Combat:CreateDropdown({
+    Name = "👥 Chọn Người Chơi",
+    Options = GetPlayerNames(),
+    CurrentOption = GetPlayerNames()[1] or "Không có ai khác",
+    Flag = "SelectedPlayer",
     Callback = function(Value)
-        SelectedTargetPlayerName = Value
+        if type(Value) == "table" then
+            SelectedTargetPlayerName = Value[1]
+        else
+            SelectedTargetPlayerName = tostring(Value)
+        end
     end
 })
 
--- Nút Làm mới danh sách người chơi (Refresh Player List)
-Tabs.Combat:Button({
-    Title = "🔄 Refresh Danh Sách Player",
+Tabs.Combat:CreateButton({
+    Name = "🔄 Refresh Danh Sách Player",
     Callback = function()
         pcall(function()
-            PlayerListDropdown:SetValues(GetPlayerNames())
+            PlayerListDropdown:Refresh(GetPlayerNames())
         end)
-        WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách người chơi!", Duration = 2})
+        Rayfield:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách người chơi!", Duration = 2})
     end
 })
 
 Players.PlayerAdded:Connect(function()
-    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
+    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
 end)
 Players.PlayerRemoving:Connect(function()
-    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
+    pcall(function() PlayerListDropdown:Refresh(GetPlayerNames()) end)
 end)
 
-Tabs.Combat:Button({
-    Title = "🚀 Teleport Tới Người Chơi Đã Chọn",
+Tabs.Combat:CreateButton({
+    Name = "🚀 Teleport Tới Người Chơi Đã Chọn",
     Callback = function()
         local char = LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         if not hrp then 
-            WindUI:Notify({Title = "❌ Lỗi", Content = "Nhân vật của bạn chưa sẵn sàng!", Duration = 2})
+            Rayfield:Notify({Title = "❌ Lỗi", Content = "Nhân vật của bạn chưa sẵn sàng!", Duration = 2})
             return
         end
         
         if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
-            WindUI:Notify({Title = "⚠️ Chú ý", Content = "Vui lòng chọn một người chơi hợp lệ trước!", Duration = 2})
+            Rayfield:Notify({Title = "⚠️ Chú ý", Content = "Vui lòng chọn một người chơi hợp lệ trước!", Duration = 2})
             return
         end
         
@@ -340,49 +350,53 @@ Tabs.Combat:Button({
         
         if targetHrp then
             hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
-            WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
+            Rayfield:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
         else
-            WindUI:Notify({Title = "❌ Lỗi", Content = "Người chơi này chưa tải xong nhân vật hoặc ở quá xa!", Duration = 3})
+            Rayfield:Notify({Title = "❌ Lỗi", Content = "Người chơi này chưa tải xong nhân vật hoặc ở quá xa!", Duration = 3})
         end
     end
 })
 
-Tabs.Combat:Toggle({
-    Title = "🎯 Auto Target Kill (Chỉ Giết Người Được Chọn)",
-    Default = false,
+Tabs.Combat:CreateToggle({
+    Name = "🎯 Auto Target Kill (Chỉ Giết Người Được Chọn)",
+    CurrentValue = false,
+    Flag = "AutoTargetKill",
     Callback = function(Value)
         AutoTargetKillActive = Value
         if Value and (not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác") then
-            WindUI:Notify({Title = "⚠️ Chú ý", Content = "Bạn chưa chọn tên người chơi cụ thể trong danh sách!", Duration = 3})
+            Rayfield:Notify({Title = "⚠️ Chú ý", Content = "Bạn chưa chọn tên người chơi cụ thể trong danh sách!", Duration = 3})
         else
-            WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and ("Đang truy sát: " .. tostring(SelectedTargetPlayerName)) or "Đã Tắt!", Duration = 2})
+            Rayfield:Notify({Title = "🎯 Auto Target Kill", Content = Value and ("Đang truy sát: " .. tostring(SelectedTargetPlayerName)) or "Đã Tắt!", Duration = 2})
         end
     end
 })
 
-Tabs.Combat:Divider()
+Tabs.Combat:CreateDivider()
 
-Tabs.Combat:Toggle({
-    Title = "🛡️ Anti-Shake Camera (Chống Rung Màn Hình)",
-    Default = false,
+Tabs.Combat:CreateToggle({
+    Name = "🛡️ Anti-Shake Camera (Chống Rung Màn Hình)",
+    CurrentValue = false,
+    Flag = "AntiShake",
     Callback = function(Value)
         AntiShakeCameraActive = Value
         LockedCameraPosition = nil
     end
 })
 
-Tabs.Combat:Toggle({
-    Title = "🏃 Auto Dodge (Tự Né Khi Player Khác Áp Sát)",
-    Default = false,
+Tabs.Combat:CreateToggle({
+    Name = "🏃 Auto Dodge (Tự Né Khi Player Khác Áp Sát)",
+    CurrentValue = false,
+    Flag = "AutoDodge",
     Callback = function(Value)
         AutoDodgeActive = Value
-        WindUI:Notify({Title = "🏃 Auto Dodge", Content = Value and "Đã Bật chế độ tự né!" or "Đã Tắt!", Duration = 2})
+        Rayfield:Notify({Title = "🏃 Auto Dodge", Content = Value and "Đã Bật chế độ tự né!" or "Đã Tắt!", Duration = 2})
     end
 })
 
-Tabs.Combat:Toggle({
-    Title = "🚨 Emergency Low-HP Escape (<25% Máu)",
-    Default = false,
+Tabs.Combat:CreateToggle({
+    Name = "🚨 Emergency Low-HP Escape (<25% Máu)",
+    CurrentValue = false,
+    Flag = "EmergencyEscape",
     Callback = function(Value)
         EmergencyEscapeActive = Value
         IsDodging = false
@@ -390,89 +404,97 @@ Tabs.Combat:Toggle({
 })
 
 -- ========================================================
--- WINDUI ELEMENTS (AUTO FARM TAB)
+-- RAYFIELD ELEMENTS (AUTO FARM TAB)
 -- ========================================================
-Tabs.Farm:Paragraph({
+Tabs.Farm:CreateParagraph({
     Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG",
-    Desc = "Tự động dịch chuyển qua các khu vực nguyên thủy giúp cày cuốc cực nhanh."
+    Content = "Tự động dịch chuyển qua các khu vực nguyên thủy giúp cày cuốc cực nhanh."
 })
 
-Tabs.Farm:Toggle({
-    Title = "🚀 Bật/Tắt Auto Farm Route",
-    Default = false,
+Tabs.Farm:CreateToggle({
+    Name = "🚀 Bật/Tắt Auto Farm Route",
+    CurrentValue = false,
+    Flag = "AutoFarmRoute",
     Callback = function(Value)
         IsAutoFarmRunning = Value
         if Value then
             farmIndex = 1
             farmTimer = tick()
-            WindUI:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình tự động.", Duration = 2})
+            Rayfield:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình tự động.", Duration = 2})
         else
-            WindUI:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Đã trả lại quyền kiểm soát Combat.", Duration = 2})
+            Rayfield:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Đã trả lại quyền kiểm soát Combat.", Duration = 2})
         end
         UpdateFarmStatus()
     end
 })
 
-FarmParagraph = Tabs.Farm:Paragraph({
+FarmParagraphElement = Tabs.Farm:CreateParagraph({
     Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
-    Desc = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
+    Content = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
 })
 
 -- ========================================================
--- WINDUI ELEMENTS (PLAYER & ESP TAB)
+-- RAYFIELD ELEMENTS (PLAYER & ESP TAB)
 -- ========================================================
-Tabs.Player:Paragraph({
+Tabs.Player:CreateParagraph({
     Title = "👁️ HỆ THỐNG ESP & TẦM NHÌN",
-    Desc = "Hiển thị khung sáng xuyên tường và thanh máu thời gian thực của người chơi khác."
+    Content = "Hiển thị khung sáng xuyên tường và thanh máu thời gian thực của người chơi khác."
 })
 
-Tabs.Player:Toggle({
-    Title = "👀 Player ESP (Xuyên Tường & Máu)",
-    Default = false,
+Tabs.Player:CreateToggle({
+    Name = "👀 Player ESP (Xuyên Tường & Máu)",
+    CurrentValue = false,
+    Flag = "PlayerESP",
     Callback = function(Value)
         ESPEnabled = Value
         if not ESPEnabled then
             ClearESP()
         end
-        WindUI:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật xuyên tường!" or "Đã tắt xuyên tường!", Duration = 2})
+        Rayfield:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật xuyên tường!" or "Đã tắt xuyên tường!", Duration = 2})
     end
 })
 
 -- ========================================================
 -- SETTINGS TAB
 -- ========================================================
-Tabs.Settings:Paragraph({
+Tabs.Settings:CreateParagraph({
     Title = "⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH",
-    Desc = "Tùy chỉnh tốc độ, độ cao nhảy và các tập lệnh hỗ trợ bay lượn."
+    Content = "Tùy chỉnh tốc độ, độ cao nhảy và các tập lệnh hỗ trợ bay lượn."
 })
 
-Tabs.Settings:Slider({
-    Title = "🚀 WalkSpeed (Tốc độ chạy)",
-    Step = 1,
-    Value = { Min = 16, Max = 1000, Default = 16 },
+Tabs.Settings:CreateSlider({
+    Name = "🚀 WalkSpeed (Tốc độ chạy)",
+    Range = {16, 1000},
+    Increment = 1,
+    Suffix = "Speed",
+    CurrentValue = 16,
+    Flag = "WalkSpeedSlider",
     Callback = function(Value)
         CustomSpeed = Value
     end
 })
 
-Tabs.Settings:Slider({
-    Title = "🦘 JumpPower (Độ cao nhảy)",
-    Step = 1,
-    Value = { Min = 0, Max = 200, Default = 50 },
+Tabs.Settings:CreateSlider({
+    Name = "🦘 JumpPower (Độ cao nhảy)",
+    Range = {0, 200},
+    Increment = 1,
+    Suffix = "Power",
+    CurrentValue = 50,
+    Flag = "JumpPowerSlider",
     Callback = function(Value)
         CustomJumpPower = Value
     end
 })
 
-Tabs.Settings:Divider()
+Tabs.Settings:CreateDivider()
 
-Tabs.Settings:Button({
-    Title = "🦅 Bật Fly GUI V4",
+Tabs.Settings:CreateButton({
+    Name = "🦅 Bật Fly GUI V4",
     Callback = function()
         pcall(function()
             loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Better-Fly-GUI-44304"))()
         end)
-        WindUI:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4 thành công!", Duration = 3})
+        Rayfield:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4 thành công!", Duration = 3})
     end
 })
 
