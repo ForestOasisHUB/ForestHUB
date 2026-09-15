@@ -18,7 +18,7 @@ local Window = Rayfield:CreateWindow({
 
 Rayfield:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã sửa lỗi Auto Kill & Auto Target, bám cắn mượt mà!",
+    Content = "✨ Đã fix lỗi & tối ưu spam cắn liên tục cực mạnh!",
     Duration = 5,
     Image = 4483362458,
 })
@@ -830,10 +830,7 @@ RunService.RenderStepped:Connect(function(dt)
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
             if dist <= 25 then 
-                if currentTime - LastAttackTick >= 0.02 then
-                    LastAttackTick = currentTime
-                    PerformAttack(globalTargetHrp.Parent)
-                end
+                PerformAttack(globalTargetHrp.Parent)
             end
         end
         
@@ -903,18 +900,18 @@ RunService.RenderStepped:Connect(function(dt)
                         strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.3, 0)
                     end
                     
-                    -- Dùng CFrame mượt kết hợp Humanoid:Move để tránh bị giật physics của game
                     hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(strictLockPos, targetHrp.Position), 0.5)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
                     local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
-                    if currentDistToTarget <= 40 and (currentTime - LastAttackTick >= 0.002) then
-                        LastAttackTick = currentTime
+                    if currentDistToTarget <= 40 then
+                        -- Spam cắn liên tục không giới hạn độ trễ (RenderStepped tốc độ cao)
                         PerformAttack(targetChar)
                     end
                 else
                     local escapePos = targetHrp.Position + Vector3.new(0, SafeHeight, 0)
-                    hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CForm.LookVector)
+                    -- Đã fix lỗi CForm -> CFrame tránh crash
+                    hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
             else
