@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã chuyển sang WindUI, tích hợp Survival và fix hoàn tất!",
+    Content = "✨ Đã cập nhật: Auto Kill & Auto Target spam cắn liên tục không ngừng nghỉ!",
     Duration = 5
 })
 
@@ -56,8 +56,8 @@ local AutoDrinkActive = false
 -- ĐẶT MẶC ĐỊNH SPEED LÀ 70
 local CustomSpeed = 70      
 local CustomJumpPower = 50  
-local OrbitRadius = 1.0      
-local OrbitSpeed = 120.0      
+local OrbitRadius = 3.0      
+local OrbitSpeed = 45.0      
 local SafeHeight = 150       
 
 local LastAttackTick = 0
@@ -378,7 +378,7 @@ Tabs.Combat:Dropdown({
 })
 
 Tabs.Combat:Toggle({
-    Title = "⚡ Auto Kill (Bám Cắn Mục Tiêu Đến Chết)",
+    Title = "⚡ Auto Kill (Bám Cắn Liên Tục Mục Tiêu Đến Chết)",
     Default = false,
     Callback = function(Value)
         AutoKillActive = Value
@@ -401,7 +401,7 @@ Tabs.Combat:Toggle({
 Tabs.Combat:Slider({
     Title = "🎯 Khoảng cách bám (Orbit Distance)",
     Step = 0.5,
-    Value = { Min = 0, Max = 100, Default = 1.0 },
+    Value = { Min = 0, Max = 100, Default = 3.0 },
     Callback = function(Value)
         OrbitRadius = Value
     end
@@ -512,7 +512,7 @@ Tabs.Combat:Button({
 })
 
 Tabs.Combat:Toggle({
-    Title = "🎯 Auto Target Kill (Cắn Người Được Chọn Tới Chết)",
+    Title = "🎯 Auto Target Kill (Spam Cắn Người Được Chọn Tới Chết)",
     Default = false,
     Callback = function(Value)
         AutoTargetKillActive = Value
@@ -797,10 +797,7 @@ RunService.RenderStepped:Connect(function(dt)
         if AutoAttackActive and globalTargetHrp and not AutoKillActive and not AutoTargetKillActive then
             local dist = (hrp.Position - globalTargetHrp.Position).Magnitude
             if dist <= 25 then 
-                if currentTime - LastAttackTick >= 0.02 then
-                    LastAttackTick = currentTime
-                    PerformAttack(globalTargetHrp.Parent)
-                end
+                PerformAttack(globalTargetHrp.Parent)
             end
         end
         
@@ -862,20 +859,21 @@ RunService.RenderStepped:Connect(function(dt)
                     
                     if AttackModeOption == "Xoay vòng đối thủ" then
                         OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
-                        local offsetX = math.cos(OrbitAngle) * OrbitRadius
-                        local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                        local offsetX = math.cos(OrbitAngle) * (OrbitRadius + 1.0)
+                        local offsetZ = math.sin(OrbitAngle) * (OrbitRadius + 1.0)
                         strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
                     else
                         local lookVector = targetHrp.CFrame.LookVector
-                        strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
+                        local blindspotDistance = math.max(OrbitRadius, 1.2)
+                        strictLockPos = predictedPos - (lookVector * blindspotDistance) + Vector3.new(0, 0.5, 0)
                     end
                     
                     hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
                     local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
-                    if currentDistToTarget <= 35 and (currentTime - LastAttackTick >= 0.005) then
-                        LastAttackTick = currentTime
+                    if currentDistToTarget <= 35 then
+                        -- Gỡ bỏ giới hạn thời gian (LastAttackTick), cho phép spam tấn công liên tục mỗi khung hình (RenderStepped)
                         PerformAttack(targetChar)
                     end
                 else
