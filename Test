@@ -1,0 +1,647 @@
+-- ========================================================
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - REFRESH PLAYER LIST)
+-- ========================================================
+
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
+    Icon = "trees",
+    Author = "✨ Official Team Forest ✨",
+    Folder = "ForestHubConfigs",
+    Size = UDim2.fromOffset(580, 460),
+    Transparent = true,
+    Theme = "Plant", -- Tông màu Xanh lá chủ đạo siêu đẹp
+    SideBarWidth = 160,
+    HasOutline = true
+})
+
+WindUI:Notify({
+    Title = "🦖 ForestHUB Initialized!",
+    Content = "✨ Added player list refresh feature!",
+    Duration = 5
+})
+
+local Tabs = {
+    Combat = Window:Tab({ Title = "⚔️ Combat Hub", Icon = "swords" }),
+    Farm = Window:Tab({ Title = "🌾 Auto Farm Route", Icon = "map" }),
+    Player = Window:Tab({ Title = "🛡️ Player & ESP", Icon = "eye" }),
+    Settings = Window:Tab({ Title = "⚙️ Settings & UI", Icon = "settings" })
+}
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- Default all features to OFF
+local AutoKillActive = false
+local AutoTargetKillActive = false
+local AutoDodgeActive = false
+local EmergencyEscapeActive = false
+local AntiShakeCameraActive = false
+local IsAutoFarmRunning = false
+
+-- Combat & Timing Configuration
+local SafeHeight = 140       
+local AttackDuration = 10.0   
+local EscapeDuration = 2.0   
+
+local CustomSpeed = 16      
+local CustomJumpPower = 50  
+local OrbitRadius = 2.0      
+local OrbitSpeed = 40.0      
+
+local CombatState = 1        
+local StateTimer = 0
+local LastAttackTick = 0
+local OrbitAngle = 0
+
+-- Target Lock & Teleport Variables
+local LockedTarget = nil
+local SelectedTargetPlayerName = nil
+
+-- Auto Dodge Variables
+local IsDodging = false
+local DodgeTimer = 0
+local DodgeCooldown = 0
+local ThreatDistance = 12.0 
+
+-- Camera Variables
+local LockedCameraPosition = nil
+
+-- ========================================================
+-- AUTO FARM ROUTE CONFIG
+-- ========================================================
+local FarmPoints = {
+    Vector3.new(1446.5, 77.1, -677.8),
+    Vector3.new(273.3, 74.4, -1028.7),
+    Vector3.new(-617.3, 146.4, -1127.9),
+    Vector3.new(-510.2, 77.7, -430.4),
+    Vector3.new(-166.4, 110.4, 391.5),
+    Vector3.new(1086.6, 70.4, 463.8),
+    Vector3.new(-68.5, -66.9, -1487.0),
+    Vector3.new(201.8, -36.2, -365.1),
+    Vector3.new(-144.0, -100.5, 1035.6)
+}
+local farmIndex = 1
+local farmTimer = 0
+local FarmParagraph = nil
+
+local function UpdateFarmStatus()
+    if not FarmParagraph then return end
+    local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
+    local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
+    pcall(function()
+        FarmParagraph:SetDesc(content)
+    end)
+end
+
+-- ========================================================
+-- PLAYER ESP SYSTEM
+-- ========================================================
+local ESPEnabled = false
+local ESPFolder = Instance.new("Folder", Workspace)
+ESPFolder.Name = "ForestHub_ESP_Folder"
+
+local function ClearESP()
+    for _, v in pairs(ESPFolder:GetChildren()) do
+        v:Destroy()
+    end
+end
+
+local function UpdatePlayerESP()
+    ClearESP()
+    if not ESPEnabled then return end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            
+            if hrp and hum and hum.Health > 0 then
+                local hl = Instance.new("Highlight")
+                hl.Name = "ESPHighlight"
+                hl.Adornee = char
+                hl.FillColor = Color3.fromRGB(20, 80, 20)   
+                hl.OutlineColor = Color3.fromRGB(50, 255, 50) 
+                hl.FillTransparency = 0.4
+                hl.OutlineTransparency = 0
+                hl.Parent = ESPFolder
+                
+                local bg = Instance.new("BillboardGui")
+                bg.Name = "ESPNameAndHealth"
+                bg.Adornee = hrp
+                bg.Size = UDim2.new(0, 200, 0, 60)
+                bg.StudsOffset = Vector3.new(0, 3.8, 0)
+                bg.AlwaysOnTop = true
+                
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Name = "NameTag"
+                textLabel.Size = UDim2.new(1, 0, 0, 25)
+                textLabel.BackgroundTransparency = 1
+                textLabel.Text = player.Name .. " (" .. player.DisplayName .. ")"
+                textLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
+                textLabel.TextSize = 14
+                textLabel.Font = Enum.Font.SourceSansBold
+                textLabel.TextStrokeTransparency = 0
+                textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                textLabel.Parent = bg
+                
+                local healthBarBg = Instance.new("Frame")
+                healthBarBg.Name = "HealthBarBg"
+                healthBarBg.Size = UDim2.new(0, 120, 0, 8)
+                healthBarBg.Position = UDim2.new(0.5, -60, 0, 28)
+                healthBarBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+                healthBarBg.BorderSizePixel = 0
+                healthBarBg.Parent = bg
+                
+                local bgCorner = Instance.new("UICorner")
+                bgCorner.CornerRadius = UDim.new(1, 0)
+                bgCorner.Parent = healthBarBg
+                
+                local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                local healthBarFill = Instance.new("Frame")
+                healthBarFill.Name = "HealthBarFill"
+                healthBarFill.Size = UDim2.new(healthPercent, 0, 1, 0)
+                healthBarFill.BackgroundColor3 = Color3.fromRGB(50, 255, 50)
+                healthBarFill.BorderSizePixel = 0
+                healthBarFill.Parent = healthBarBg
+                
+                local fillCorner = Instance.new("UICorner")
+                fillCorner.CornerRadius = UDim.new(1, 0)
+                fillCorner.Parent = healthBarFill
+                
+                bg.Parent = ESPFolder
+            end
+        end
+    end
+end
+
+-- ========================================================
+-- GET TARGET FUNCTIONS
+-- ========================================================
+local function GetTarget()
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    if LockedTarget and LockedTarget.Parent then
+        local targetHum = LockedTarget.Parent:FindFirstChildOfClass("Humanoid")
+        if targetHum and targetHum.Health > 0 then
+            return LockedTarget
+        end
+    end
+    
+    local nearestHrp = nil
+    local shortestDist = math.huge
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+            local targetHum = player.Character:FindFirstChildOfClass("Humanoid")
+            if targetHrp and targetHum and targetHum.Health > 0 then
+                local dist = (hrp.Position - targetHrp.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    nearestHrp = targetHrp
+                end
+            end
+        end
+    end
+    
+    LockedTarget = nearestHrp
+    return LockedTarget
+end
+
+local function GetSelectedPlayerTargetHRP()
+    if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
+        return nil
+    end
+    
+    local targetPlayer = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name == SelectedTargetPlayerName or p.DisplayName == SelectedTargetPlayerName then
+            targetPlayer = p
+            break
+        end
+    end
+    
+    if targetPlayer and targetPlayer.Character then
+        local hrp = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local hum = targetPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hrp and hum and hum.Health > 0 then
+            return hrp
+        end
+    end
+    return nil
+end
+
+-- ========================================================
+-- WINDUI ELEMENTS (COMBAT TAB)
+-- ========================================================
+Tabs.Combat:Paragraph({
+    Title = "🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI",
+    Desc = "• Bám sát mục tiêu thông minh\n• Cắn liên tục 10s & né tránh mượt mà 2s lên không trung."
+})
+
+Tabs.Combat:Toggle({
+    Title = "⚡ Auto Kill (Bám Sát & Cắn Toàn Bộ Mục Tiêu Gần)",
+    Default = false,
+    Callback = function(Value)
+        AutoKillActive = Value
+        CombatState = 1
+        StateTimer = 0
+        LockedTarget = nil
+        WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
+    end
+})
+
+Tabs.Combat:Slider({
+    Title = "🎯 Bite / Orbit Distance (Khoảng cách cắn)",
+    Step = 0.1,
+    Value = { Min = 0, Max = 100, Default = 2 },
+    Callback = function(Value)
+        OrbitRadius = Value
+    end
+})
+
+Tabs.Combat:Divider()
+
+Tabs.Combat:Paragraph({
+    Title = "🎯 DỊCH CHUYỂN & CHỌN MỤC TIÊU RIÊNG",
+    Desc = "Chọn đúng tên người chơi bạn muốn truy sát bên dưới."
+})
+
+local PlayerListDropdown = nil
+local function GetPlayerNames()
+    local list = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(list, p.Name)
+        end
+    end
+    if #list == 0 then table.insert(list, "Không có ai khác") end
+    return list
+end
+
+PlayerListDropdown = Tabs.Combat:Dropdown({
+    Title = "👥 Chọn Người Chơi",
+    Values = GetPlayerNames(),
+    Default = "",
+    Callback = function(Value)
+        SelectedTargetPlayerName = Value
+    end
+})
+
+-- Nút Làm mới danh sách người chơi (Refresh Player List)
+Tabs.Combat:Button({
+    Title = "🔄 Refresh Danh Sách Player",
+    Callback = function()
+        pcall(function()
+            PlayerListDropdown:SetValues(GetPlayerNames())
+        end)
+        WindUI:Notify({Title = "✨ Thành Công", Content = "Đã làm mới danh sách người chơi!", Duration = 2})
+    end
+})
+
+Players.PlayerAdded:Connect(function()
+    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
+end)
+Players.PlayerRemoving:Connect(function()
+    pcall(function() PlayerListDropdown:SetValues(GetPlayerNames()) end)
+end)
+
+Tabs.Combat:Button({
+    Title = "🚀 Teleport Tới Người Chơi Đã Chọn",
+    Callback = function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then 
+            WindUI:Notify({Title = "❌ Lỗi", Content = "Nhân vật của bạn chưa sẵn sàng!", Duration = 2})
+            return
+        end
+        
+        if not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác" then
+            WindUI:Notify({Title = "⚠️ Chú ý", Content = "Vui lòng chọn một người chơi hợp lệ trước!", Duration = 2})
+            return
+        end
+        
+        local targetHrp = nil
+        local startTime = tick()
+        while tick() - startTime < 2.0 do
+            targetHrp = GetSelectedPlayerTargetHRP()
+            if targetHrp then break end
+            task.wait(0.1)
+        end
+        
+        if targetHrp then
+            hrp.CFrame = targetHrp.CFrame + Vector3.new(0, 3, 0)
+            WindUI:Notify({Title = "✨ Thành Công", Content = "Đã dịch chuyển tới mục tiêu!", Duration = 2})
+        else
+            WindUI:Notify({Title = "❌ Lỗi", Content = "Người chơi này chưa tải xong nhân vật hoặc ở quá xa!", Duration = 3})
+        end
+    end
+})
+
+Tabs.Combat:Toggle({
+    Title = "🎯 Auto Target Kill (Chỉ Giết Người Được Chọn)",
+    Default = false,
+    Callback = function(Value)
+        AutoTargetKillActive = Value
+        if Value and (not SelectedTargetPlayerName or SelectedTargetPlayerName == "" or SelectedTargetPlayerName == "Không có ai khác") then
+            WindUI:Notify({Title = "⚠️ Chú ý", Content = "Bạn chưa chọn tên người chơi cụ thể trong danh sách!", Duration = 3})
+        else
+            WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and ("Đang truy sát: " .. tostring(SelectedTargetPlayerName)) or "Đã Tắt!", Duration = 2})
+        end
+    end
+})
+
+Tabs.Combat:Divider()
+
+Tabs.Combat:Toggle({
+    Title = "🛡️ Anti-Shake Camera (Chống Rung Màn Hình)",
+    Default = false,
+    Callback = function(Value)
+        AntiShakeCameraActive = Value
+        LockedCameraPosition = nil
+    end
+})
+
+Tabs.Combat:Toggle({
+    Title = "🏃 Auto Dodge (Tự Né Khi Player Khác Áp Sát)",
+    Default = false,
+    Callback = function(Value)
+        AutoDodgeActive = Value
+        WindUI:Notify({Title = "🏃 Auto Dodge", Content = Value and "Đã Bật chế độ tự né!" or "Đã Tắt!", Duration = 2})
+    end
+})
+
+Tabs.Combat:Toggle({
+    Title = "🚨 Emergency Low-HP Escape (<25% Máu)",
+    Default = false,
+    Callback = function(Value)
+        EmergencyEscapeActive = Value
+        IsDodging = false
+    end
+})
+
+-- ========================================================
+-- WINDUI ELEMENTS (AUTO FARM TAB)
+-- ========================================================
+Tabs.Farm:Paragraph({
+    Title = "🌟 LỘ TRÌNH FARM TỰ ĐỘNG",
+    Desc = "Tự động dịch chuyển qua các khu vực nguyên thủy giúp cày cuốc cực nhanh."
+})
+
+Tabs.Farm:Toggle({
+    Title = "🚀 Bật/Tắt Auto Farm Route",
+    Default = false,
+    Callback = function(Value)
+        IsAutoFarmRunning = Value
+        if Value then
+            farmIndex = 1
+            farmTimer = tick()
+            WindUI:Notify({Title = "🌟 Auto Farm Đã Bật", Content = "Đang chạy lộ trình tự động.", Duration = 2})
+        else
+            WindUI:Notify({Title = "🛑 Auto Farm Đã Tắt", Content = "Đã trả lại quyền kiểm soát Combat.", Duration = 2})
+        end
+        UpdateFarmStatus()
+    end
+})
+
+FarmParagraph = Tabs.Farm:Paragraph({
+    Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
+    Desc = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
+})
+
+-- ========================================================
+-- WINDUI ELEMENTS (PLAYER & ESP TAB)
+-- ========================================================
+Tabs.Player:Paragraph({
+    Title = "👁️ HỆ THỐNG ESP & TẦM NHÌN",
+    Desc = "Hiển thị khung sáng xuyên tường và thanh máu thời gian thực của người chơi khác."
+})
+
+Tabs.Player:Toggle({
+    Title = "👀 Player ESP (Xuyên Tường & Máu)",
+    Default = false,
+    Callback = function(Value)
+        ESPEnabled = Value
+        if not ESPEnabled then
+            ClearESP()
+        end
+        WindUI:Notify({Title = "👀 Player ESP", Content = Value and "Đã bật xuyên tường!" or "Đã tắt xuyên tường!", Duration = 2})
+    end
+})
+
+-- ========================================================
+-- SETTINGS TAB
+-- ========================================================
+Tabs.Settings:Paragraph({
+    Title = "⚙️ CÀI ĐẶT NHÂN VẬT & TIỆN ÍCH",
+    Desc = "Tùy chỉnh tốc độ, độ cao nhảy và các tập lệnh hỗ trợ bay lượn."
+})
+
+Tabs.Settings:Slider({
+    Title = "🚀 WalkSpeed (Tốc độ chạy)",
+    Step = 1,
+    Value = { Min = 16, Max = 1000, Default = 16 },
+    Callback = function(Value)
+        CustomSpeed = Value
+    end
+})
+
+Tabs.Settings:Slider({
+    Title = "🦘 JumpPower (Độ cao nhảy)",
+    Step = 1,
+    Value = { Min = 0, Max = 200, Default = 50 },
+    Callback = function(Value)
+        CustomJumpPower = Value
+    end
+})
+
+Tabs.Settings:Divider()
+
+Tabs.Settings:Button({
+    Title = "🦅 Bật Fly GUI V4",
+    Callback = function()
+        pcall(function()
+            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Better-Fly-GUI-44304"))()
+        end)
+        WindUI:Notify({Title = "✨ Fly GUI", Content = "Đã kích hoạt Fly GUI V4 thành công!", Duration = 3})
+    end
+})
+
+local ESPUpdateTimer = 0
+
+-- ========================================================
+-- MAIN LOOP
+-- ========================================================
+RunService.RenderStepped:Connect(function(dt)
+    local char = LocalPlayer.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+    
+    if ESPEnabled then
+        ESPUpdateTimer = ESPUpdateTimer + dt
+        if ESPUpdateTimer >= 0.3 then
+            ESPUpdateTimer = 0
+            UpdatePlayerESP()
+        end
+    end
+
+    if hrp and humanoid then
+        pcall(function()
+            humanoid.WalkSpeed = CustomSpeed
+            humanoid.JumpPower = CustomJumpPower
+        end)
+        
+        local currentTime = tick()
+        
+        if AntiShakeCameraActive then
+            local currentCamCF = Camera.CFrame
+            if not LockedCameraPosition then
+                LockedCameraPosition = currentCamCF
+            else
+                LockedCameraPosition = LockedCameraPosition:Lerp(currentCamCF, 0.15)
+                Camera.CFrame = LockedCameraPosition
+            end
+        else
+            LockedCameraPosition = nil
+        end
+        
+        if IsAutoFarmRunning then
+            local targetPos = FarmPoints[farmIndex]
+            hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            
+            if currentTime - farmTimer >= 10.5 then
+                farmIndex = farmIndex + 1
+                if farmIndex > #FarmPoints then farmIndex = 1 end
+                farmTimer = currentTime
+                UpdateFarmStatus()
+            end
+            
+            return 
+        end
+        
+        if AutoTargetKillActive then
+            local targetHrp = GetSelectedPlayerTargetHRP()
+            if targetHrp then
+                OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
+                local targetVelocity = targetHrp.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                local predictedPos = targetHrp.Position + (targetVelocity * 0.04)
+                
+                local offsetX = math.cos(OrbitAngle) * OrbitRadius
+                local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                
+                local strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                
+                if currentTime - LastAttackTick >= 0.05 then
+                    LastAttackTick = currentTime
+                    pcall(function()
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                        task.wait(0.002)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    end)
+                end
+                return
+            end
+        end
+
+        local currentTarget = GetTarget()
+        
+        if AutoDodgeActive and not IsDodging and (currentTime - DodgeCooldown > 1.2) then
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local pTargetHrp = player.Character:FindFirstChild("HumanoidRootPart")
+                    local pTargetHum = player.Character:FindFirstChildOfClass("Humanoid")
+                    if pTargetHrp and pTargetHum and pTargetHum.Health > 0 then
+                        local distance = (hrp.Position - pTargetHrp.Position).Magnitude
+                        if distance <= ThreatDistance then
+                            IsDodging = true
+                            DodgeTimer = currentTime
+                            DodgeCooldown = currentTime
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        
+        if IsDodging then
+            local escapeRefPos = currentTarget and currentTarget.Position or hrp.Position
+            local dodgePos = escapeRefPos + Vector3.new(0, SafeHeight, 0)
+            hrp.CFrame = CFrame.new(dodgePos, hrp.Position + hrp.CFrame.LookVector)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            
+            if currentTime - DodgeTimer >= 0.8 then
+                IsDodging = false
+                CombatState = 1
+                StateTimer = 0
+            end
+            return
+        end
+        
+        if EmergencyEscapeActive and humanoid.Health > 0 and (humanoid.Health / humanoid.MaxHealth) < 0.25 and currentTarget then
+            local emergencyPos = currentTarget.Position + Vector3.new(0, SafeHeight + 50, 0)
+            hrp.CFrame = CFrame.new(emergencyPos, hrp.Position + hrp.CFrame.LookVector)
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            return
+        end
+        
+        if AutoKillActive and currentTarget then
+            if CombatState == 1 then
+                if StateTimer == 0 then
+                    StateTimer = currentTime
+                end
+                
+                OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
+                
+                local targetVelocity = currentTarget.AssemblyLinearVelocity or Vector3.new(0,0,0)
+                local predictedPos = currentTarget.Position + (targetVelocity * 0.04)
+                
+                local offsetX = math.cos(OrbitAngle) * OrbitRadius
+                local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                
+                local strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                hrp.CFrame = CFrame.new(strictLockPos, currentTarget.Position)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                
+                if currentTime - LastAttackTick >= 0.05 then
+                    LastAttackTick = currentTime
+                    pcall(function()
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                        task.wait(0.002)
+                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                    end)
+                end
+                
+                if currentTime - StateTimer >= AttackDuration then
+                    CombatState = 2
+                    StateTimer = currentTime
+                end
+                
+            elseif CombatState == 2 then
+                local escapePos = currentTarget.Position + Vector3.new(0, SafeHeight, 0)
+                hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                
+                if currentTime - StateTimer >= EscapeDuration then
+                    CombatState = 1
+                    StateTimer = 0
+                    LockedTarget = nil
+                end
+            end
+        else
+            StateTimer = 0
+            LockedTarget = nil
+        end
+    end
+end)
