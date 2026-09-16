@@ -1,11 +1,11 @@
 -- ========================================================
--- PRIMEVAL EARTH | WINDUI (FORESTHUB - FIXED & FINAL)
+-- PRIMEVAL EARTH | WINDUI (FORESTHUB - FINAL COMBAT MODES)
 -- ========================================================
 
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "🦖 Primeval Earth | 🌟 ForestHUB On Top",
+    Title = "🦖 Primeval Earth | 🌟 ForestHUB Ultimate",
     Icon = "trees",
     Author = "✨ Official Team Forest ✨",
     Folder = "ForestHubConfigs",
@@ -18,7 +18,7 @@ local Window = WindUI:CreateWindow({
 
 WindUI:Notify({
     Title = "🦖 ForestHUB Initialized!",
-    Content = "✨ Đã cập nhật: Auto Kill & Auto Target spam cắn liên tục không ngừng nghỉ!",
+    Content = "✨ Đã cập nhật: Xoay vòng > 40 mượt mà + Hit & Run chuẩn nhịp thời gian + Sky Dive Attack!",
     Duration = 5
 })
 
@@ -48,26 +48,31 @@ local AutoAimActive = false
 local AutoRunActive = false
 local AutoAttackActive = false
 
--- Biến sinh tồn (Survival States)
 local AutoGrassActive = false     
 local AutoMeatActive = false      
 local AutoDrinkActive = false     
 
--- ĐẶT MẶC ĐỊNH SPEED LÀ 70
 local CustomSpeed = 70      
 local CustomJumpPower = 50  
 local OrbitRadius = 3.0      
-local OrbitSpeed = 45.0      
+local OrbitSpeed = 22.0      
 local SafeHeight = 150       
 
-local LastAttackTick = 0
 local OrbitAngle = 0
+
+-- Biến quản lý trạng thái Hit & Run (Về chỗ cũ)
+local HitAndRunState = "TELE_TO_TARGET" -- "TELE_TO_TARGET", "STAY_AND_BITE", "RETURN_ORIGIN", "WAIT_ORIGIN"
+local HitAndRunTimer = 0
+local SavedOriginalCFrame = nil
+
+-- Biến quản lý trạng thái Sky Dive Attack (Bay lên trời né 40 stud)
+local SkyDiveState = "TELE_TO_TARGET" -- "TELE_TO_TARGET", "BITE_DOWN", "TELE_UP", "WAIT_UP"
+local SkyDiveTimer = 0
 
 local SelectedTargetPlayerName = nil
 local LockedCameraPosition = nil
 local AttackModeOption = "Xoay vòng đối thủ"
 local CurrentPersistentTarget = nil
-
 local CombatState = 1 
 
 local CombatRemotes = {}
@@ -107,7 +112,7 @@ local FarmParagraph = nil
 
 local function UpdateFarmStatus()
     if not FarmParagraph then return end
-    local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 ĐANG TẮT"
+    local statusText = IsAutoFarmRunning and "🟢 ĐANG CHẠY LỘ TRÌNH" or "🔴 Đang TẮT"
     local content = string.format("• Trạng thái: %s\n• Đang ở điểm số: %d / %d\n\n✨ Hệ thống dịch chuyển mượt mà, đứng chờ 10.5s mỗi điểm.", statusText, farmIndex, #FarmPoints)
     pcall(function()
         FarmParagraph:SetDesc(content)
@@ -171,7 +176,7 @@ local function GetAllMeatParts()
 end
 
 -- ========================================================
--- PLAYER ESP SYSTEM (FIXED & REALTIME)
+-- PLAYER ESP SYSTEM
 -- ========================================================
 local ESPEnabled = false
 local ESPFolder = Workspace:FindFirstChild("ForestHub_ESP_Folder") or Instance.new("Folder", Workspace)
@@ -360,12 +365,12 @@ end
 -- ========================================================
 Tabs.Combat:Paragraph({
     Title = "🔥 HỆ THỐNG TẤN CÔNG & SĂN MỒI",
-    Desc = "• Auto Aim, Auto Run & Auto Attack hoạt động hoàn hảo."
+    Desc = "• Spam cắn siêu tốc không độ trễ, hỗ trợ xoay vòng mọi cự ly và các cách đánh đặc biệt."
 })
 
 Tabs.Combat:Dropdown({
     Title = "⚔️ Tùy Chọn Cách Đánh",
-    Values = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)"},
+    Values = {"Xoay vòng đối thủ", "Cắn ở sau lưng (Blindspot)", "Tele cắn & Về chỗ cũ", "Hit & Run Lên Trời (Sky Dive)"},
     Default = "Xoay vòng đối thủ",
     Callback = function(Value)
         if type(Value) == "table" then
@@ -373,6 +378,8 @@ Tabs.Combat:Dropdown({
         else
             AttackModeOption = tostring(Value)
         end
+        HitAndRunState = "TELE_TO_TARGET"
+        SkyDiveState = "TELE_TO_TARGET"
         WindUI:Notify({Title = "⚔️ Cách Đánh", Content = "Đã chuyển sang: " .. AttackModeOption, Duration = 2})
     end
 })
@@ -385,6 +392,8 @@ Tabs.Combat:Toggle({
         if Value then AutoTargetKillActive = false end
         CurrentPersistentTarget = nil
         CombatState = 1
+        HitAndRunState = "TELE_TO_TARGET"
+        SkyDiveState = "TELE_TO_TARGET"
         WindUI:Notify({Title = "⚡ Auto Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
@@ -518,6 +527,8 @@ Tabs.Combat:Toggle({
         AutoTargetKillActive = Value
         if Value then AutoKillActive = false end
         CombatState = 1
+        HitAndRunState = "TELE_TO_TARGET"
+        SkyDiveState = "TELE_TO_TARGET"
         WindUI:Notify({Title = "🎯 Auto Target Kill", Content = Value and "Đã Bật!" or "Đã Tắt!", Duration = 2})
     end
 })
@@ -592,7 +603,7 @@ Tabs.Farm:Toggle({
 
 FarmParagraph = Tabs.Farm:Paragraph({
     Title = "📊 Tiến Độ Lộ Trình Hiện Tại",
-    Desc = "• Trạng thái: 🔴 ĐANG TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
+    Desc = "• Trạng thái: 🔴 Đang TẮT\n• Bấm bật công tắc phía trên để bắt đầu."
 })
 
 -- ========================================================
@@ -683,7 +694,7 @@ RunService.RenderStepped:Connect(function(dt)
         local currentTime = tick()
         local globalTargetHrp = GetNearestGlobalTarget()
         
-        -- 1. XỬ LÝ LOGIC SINH TỒN (AUTO GRASS, AUTO MEAT TELEPORT TOÀN MAP, AUTO DRINK)
+        -- 1. XỬ LÝ LOGIC SINH TỒN
         if AutoGrassActive then
             LockedWaterCFrame = nil
             local targetPos = GrassPoints[grassIndex]
@@ -760,7 +771,7 @@ RunService.RenderStepped:Connect(function(dt)
             LockedWaterCFrame = nil
         end
 
-        -- AUTO AIM (KHÓA CHUẨN XÁC VÀO ĐẦU HOẶC THÂN MỤC TIÊU)
+        -- AUTO AIM
         if AutoAimActive and globalTargetHrp then
             pcall(function()
                 local targetChar = globalTargetHrp.Parent
@@ -843,6 +854,8 @@ RunService.RenderStepped:Connect(function(dt)
             targetHrp = GetTarget()
         else
             CurrentPersistentTarget = nil
+            HitAndRunState = "TELE_TO_TARGET"
+            SkyDiveState = "TELE_TO_TARGET"
         end
         
         if targetHrp and targetHrp.Parent then
@@ -855,37 +868,110 @@ RunService.RenderStepped:Connect(function(dt)
                     local predictionFactor = 0.08
                     local predictedPos = targetHrp.Position + (targetVelocity * predictionFactor)
                     
-                    local strictLockPos = predictedPos
-                    
-                    if AttackModeOption == "Xoay vòng đối thủ" then
-                        OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
-                        local offsetX = math.cos(OrbitAngle) * (OrbitRadius + 1.0)
-                        local offsetZ = math.sin(OrbitAngle) * (OrbitRadius + 1.0)
-                        strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                    if AttackModeOption == "Tele cắn & Về chỗ cũ" then
+                        -- LẬP TRÌNH ĐÚNG NHỊP: Tele cắn (đứng cắn 0.8s) -> Về chỗ cũ (đứng 1.0s) -> Lặp lại
+                        if HitAndRunState == "TELE_TO_TARGET" then
+                            SavedOriginalCFrame = hrp.CFrame
+                            local randomOffset = Vector3.new(math.random(-2, 2), 0.5, math.random(-2, 2))
+                            hrp.CFrame = CFrame.new(targetHrp.Position + randomOffset, targetHrp.Position)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            
+                            HitAndRunTimer = currentTime
+                            HitAndRunState = "STAY_AND_BITE"
+                        elseif HitAndRunState == "STAY_AND_BITE" then
+                            -- Giữ nguyên vị trí cạnh đối thủ và spam cắn liên tục trong 0.8 giây
+                            local randomOffset = Vector3.new(math.random(-2, 2), 0.5, math.random(-2, 2))
+                            hrp.CFrame = CFrame.new(targetHrp.Position + randomOffset, targetHrp.Position)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            
+                            PerformAttack(targetChar)
+                            
+                            if currentTime - HitAndRunTimer >= 0.8 then
+                                if SavedOriginalCFrame then
+                                    hrp.CFrame = SavedOriginalCFrame
+                                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                end
+                                HitAndRunTimer = currentTime
+                                HitAndRunState = "WAIT_ORIGIN"
+                            end
+                        elseif HitAndRunState == "WAIT_ORIGIN" then
+                            -- Đứng ở chỗ cũ chờ 1.0 giây
+                            if SavedOriginalCFrame then
+                                hrp.CFrame = SavedOriginalCFrame
+                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            end
+                            if currentTime - HitAndRunTimer >= 1.0 then
+                                HitAndRunState = "TELE_TO_TARGET"
+                            end
+                        end
+                        
+                    elseif AttackModeOption == "Hit & Run Lên Trời (Sky Dive)" then
+                        -- LẬP TRÌNH SKY DIVE: Tele cắn -> Bay lên trời 40 stud (né 1s) -> Tele xuống cắn (1s) -> Lặp lại
+                        if SkyDiveState == "TELE_TO_TARGET" then
+                            local randomOffset = Vector3.new(math.random(-2, 2), 0.5, math.random(-2, 2))
+                            hrp.CFrame = CFrame.new(targetHrp.Position + randomOffset, targetHrp.Position)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            
+                            SkyDiveTimer = currentTime
+                            SkyDiveState = "BITE_DOWN"
+                        elseif SkyDiveState == "BITE_DOWN" then
+                            local randomOffset = Vector3.new(math.random(-2, 2), 0.5, math.random(-2, 2))
+                            hrp.CFrame = CFrame.new(targetHrp.Position + randomOffset, targetHrp.Position)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            
+                            PerformAttack(targetChar)
+                            
+                            if currentTime - SkyDiveTimer >= 1.0 then
+                                SkyDiveTimer = currentTime
+                                SkyDiveState = "TELE_UP"
+                            end
+                        elseif SkyDiveState == "TELE_UP" then
+                            -- Bay lên trời cao 40 studs so với mục tiêu để né tránh
+                            local upPos = targetHrp.Position + Vector3.new(0, 40, 0)
+                            hrp.CFrame = CFrame.new(upPos, targetHrp.Position)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                            
+                            if currentTime - SkyDiveTimer >= 1.0 then
+                                SkyDiveTimer = currentTime
+                                SkyDiveState = "TELE_TO_TARGET"
+                            end
+                        end
+                        
                     else
-                        local lookVector = targetHrp.CFrame.LookVector
-                        local blindspotDistance = math.max(OrbitRadius, 1.2)
-                        strictLockPos = predictedPos - (lookVector * blindspotDistance) + Vector3.new(0, 0.5, 0)
-                    end
-                    
-                    hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
-                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                        -- XỬ LÝ XOAY VÒNG HOẶC BLINDSPOT (Xoay vòng mượt mà ở mọi cự ly, kể cả > 40)
+                        local strictLockPos = predictedPos
+                        
+                        if AttackModeOption == "Xoay vòng đối thủ" then
+                            OrbitAngle = OrbitAngle + (OrbitSpeed * dt)
+                            local offsetX = math.cos(OrbitAngle) * OrbitRadius
+                            local offsetZ = math.sin(OrbitAngle) * OrbitRadius
+                            strictLockPos = predictedPos + Vector3.new(offsetX, 0.5, offsetZ)
+                        else
+                            local lookVector = targetHrp.CFrame.LookVector
+                            strictLockPos = predictedPos - (lookVector * OrbitRadius) + Vector3.new(0, 0.5, 0)
+                        end
+                        
+                        hrp.CFrame = CFrame.new(strictLockPos, targetHrp.Position)
+                        hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 
-                    local currentDistToTarget = (hrp.Position - targetHrp.Position).Magnitude
-                    if currentDistToTarget <= 35 then
-                        -- Gỡ bỏ giới hạn thời gian (LastAttackTick), cho phép spam tấn công liên tục mỗi khung hình (RenderStepped)
                         PerformAttack(targetChar)
                     end
                 else
                     local escapePos = targetHrp.Position + Vector3.new(0, SafeHeight, 0)
                     hrp.CFrame = CFrame.new(escapePos, hrp.Position + hrp.CFrame.LookVector)
                     hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                    HitAndRunState = "TELE_TO_TARGET"
+                    SkyDiveState = "TELE_TO_TARGET"
                 end
             else
                 CurrentPersistentTarget = nil
+                HitAndRunState = "TELE_TO_TARGET"
+                SkyDiveState = "TELE_TO_TARGET"
             end
         else
             CurrentPersistentTarget = nil
+            HitAndRunState = "TELE_TO_TARGET"
+            SkyDiveState = "TELE_TO_TARGET"
         end
     end
 end)
