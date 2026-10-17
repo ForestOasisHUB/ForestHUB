@@ -1,5 +1,5 @@
 -- ========================================================
--- EVADE: BORDER-BLAZING HALLOWEEN PLATFORM + FULLBRIGHT + GUI
+-- EVade: FULL-MAP SCAN SOUL HALLOWEEN AFK FARM EVENT
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -181,7 +181,6 @@ local function createSkyPlatform()
     local currentPos = hrp.Position
     safePosition = Vector3.new(currentPos.X, currentPos.Y + 1000, currentPos.Z)
 
-    -- Tạo bệ chính màu Cam Bí Ngô Neon phát sáng
     platformPart = Instance.new("Part")
     platformPart.Name = "BorderBlazingPlatform"
     platformPart.Size = Vector3.new(45, 3, 45)
@@ -191,7 +190,6 @@ local function createSkyPlatform()
     platformPart.Material = Enum.Material.Neon
     platformPart.Parent = Workspace
 
-    -- Tạo các phần nhỏ gắn lửa ở 4 cạnh viền ngoài của bệ (tránh vướng chỗ đứng ở giữa)
     local offsets = {
         Vector3.new(21, 1.5, 0),
         Vector3.new(-21, 1.5, 0),
@@ -218,7 +216,6 @@ local function createSkyPlatform()
         fire.Parent = firePart
     end
 
-    -- Khung viền chọn bệ phát sáng trắng bọc ngoài
     local glowBorder = Instance.new("SelectionBox")
     glowBorder.Adornee = platformPart
     glowBorder.Color3 = Color3.fromRGB(255, 255, 255)
@@ -237,51 +234,58 @@ local function removeSkyPlatform()
     end
 end
 
--- Hàm quét chính xác theo danh sách Folder SoulLv1, SoulLv2, SoulLv3, Piano, Soul, ItemSpawns
-local function getValidCandyTarget()
+-- HÀM QUÉT TOÀN BỘ MAP TÌM SOUL (TỐI ƯU HÓA KHÔNG BỎ SÓT)
+local function getFullMapSoulTarget()
     local bestTarget = nil
     
+    -- Duyệt qua toàn bộ workspace để tìm mọi đối tượng tiềm năng
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj and obj.Parent then
-            -- 1. Bỏ qua người chơi
+            -- 1. Chặn tuyệt đối người chơi và thư mục Client
             if obj:IsDescendantOf(Players) then continue end
             
-            -- 2. CHẶN TRIỆT ĐỂ THƯ MỤC CLIENT VÀ THANG MÁY
             local parentFolder = obj.Parent
             local parentModel = obj:IsA("Model") and obj or obj:FindFirstAncestorOfClass("Model")
+            
+            local isBelongToPlayer = false
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character and (obj == p.Character or obj:IsDescendantOf(p.Character)) then
+                    isBelongToPlayer = true
+                    break
+                end
+            end
+            if isBelongToPlayer then continue end
             
             if (parentFolder and parentFolder.Name == "Client") or (parentModel and parentModel.Name == "Client") then
                 continue
             end
             
-            -- 3. Bỏ qua nếu thuộc character của người chơi trong server
-            local isPlayerRelated = false
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p.Character and obj:IsDescendantOf(p.Character) then
-                    isPlayerRelated = true
-                    break
-                end
-            end
-            if isPlayerRelated then continue end
-            
-            -- 4. Bỏ qua model có Humanoid/Animation (người, bot, emote)
-            if parentModel and (parentModel:FindFirstChildOfClass("Humanoid") or parentModel:FindFirstChildOfClass("AnimationController")) then
-                continue
-            end
-            
+            -- 2. Kiểm tra tên chứa "soul" ở cấp độ object, folder hoặc model trong toàn bộ map
             local name = string.lower(obj.Name)
             local pName = parentFolder and string.lower(parentFolder.Name) or ""
+            local mName = parentModel and string.lower(parentModel.Name) or ""
             
-            -- 5. Cấm các đồ vật rác, thang máy, cửa, tường
-            if name:find("elevator") or name:find("door") or name:find("wall") or name:find("chair") or name:find("table") or name:find("prop") or name:find("decor") or name:find("emote") or name:find("floor") then
-                continue
-            end
+            local isSoulItem = name:find("soul") or pName:find("soul") or mName:find("soul")
             
-            -- 6. KIỂM TRA CHÍNH XÁC DANH SÁCH FOLDER VÀ TÊN SOUL
-            local isInSoulFolder = pName:find("soullv") or pName:find("soul") or pName:find("piano") or pName:find("itemspawns") or pName:find("candy") or pName:find("orb")
-            local isSoulName = name:find("soul") or name:find("candy") or name:find("orb") or name:find("wisp") or name == "itemspawn"
-            
-            if isInSoulFolder or isSoulName then
+            if isSoulItem then
+                -- 3. Chặn các đối tượng rác, lửa trại, piano, jump pad,... dù có lỡ dính tên soul
+                if name:find("fire") or pName:find("fire") or mName:find("fire") or
+                   name:find("campfire") or pName:find("campfire") or mName:find("campfire") or
+                   name:find("bonfire") or pName:find("bonfire") or mName:find("bonfire") or
+                   name:find("flame") or pName:find("flame") or mName:find("flame") or
+                   name:find("piano") or pName:find("piano") or mName:find("piano") or 
+                   name:find("jumppad") or pName:find("jumppad") or mName:find("jumppad") or
+                   name:find("speedboost") or pName:find("speedboost") or mName:find("speedboost") or
+                   name:find("boost") or name:find("pad") or name:find("spring") or
+                   name:find("elevator") or name:find("door") or name:find("wall") or 
+                   name:find("chair") or name:find("table") or name:find("prop") or 
+                   name:find("decor") or name:find("emote") or name:find("floor") or 
+                   name:find("painting") or name:find("bottle") or name:find("candle") or
+                   name:find("accessory") or name:find("hat") or name:find("handle") then
+                    continue
+                end
+                
+                -- Lấy phần thể hiện hình học (Part) hợp lệ để teleport
                 local targetPart = nil
                 if obj:IsA("BasePart") then
                     targetPart = obj
@@ -290,7 +294,7 @@ local function getValidCandyTarget()
                 end
                 
                 if targetPart and not collectedItems[targetPart] then
-                    if targetPart.Transparency < 0.9 and targetPart.Size.Magnitude < 12 then
+                    if targetPart.Transparency < 0.9 and targetPart.Size.Magnitude < 20 then
                         bestTarget = targetPart
                         break
                     end
@@ -307,7 +311,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
     autoSkyFarm = not autoSkyFarm
     
     if autoSkyFarm then
-        -- TRẠNG THÁI ON: BẬT FULLBRIGHT + BỆ VIỀN LỬA CAM + VIỀN NÚT SÁNG CAM
         ToggleBtn.Text = "🎃 AFK Farm Event: ON 🔮"
         ToggleBtn.TextColor3 = Color3.fromRGB(80, 255, 120)
         ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 20, 10)
@@ -322,7 +325,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
         createSkyPlatform()
         collectedItems = {}
         
-        -- Chống rơi và giữ cân bằng trên bệ
         antiFallConnection = RunService.RenderStepped:Connect(function()
             if not autoSkyFarm or not safePosition then return end
             local char = LocalPlayer.Character
@@ -332,7 +334,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
             end
         end)
 
-        -- Tăng tốc độ chạy và nhảy cao tự động
         speedJumpConnection = RunService.Stepped:Connect(function()
             if not autoSkyFarm then return end
             local char = LocalPlayer.Character
@@ -343,25 +344,24 @@ ToggleBtn.MouseButton1Click:Connect(function()
             end
         end)
 
-        -- Vòng lặp Săn Soul / Candy chuẩn xác
         task.spawn(function()
             while autoSkyFarm do
                 local char = LocalPlayer.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 
                 if hrp and safePosition and not isCarryingSomeone() then
-                    local targetPart = getValidCandyTarget()
+                    local targetPart = getFullMapSoulTarget()
                     
                     if targetPart then
                         collectedItems[targetPart] = true
                         
-                        -- 1. Teleport ngay sát cục Soul / Candy
+                        -- Teleport tới ngay cạnh Soul trên toàn map
                         hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
                         hrp.Velocity = Vector3.new(0, 0, 0)
                         
-                        -- 2. ĐỨNG IM TẠI CHỖ CHO ĐẾN KHI NHẶT XONG
+                        -- Giữ vị trí để game nhận diện nhặt item
                         local maxHoldTime = 0
-                        while autoSkyFarm and targetPart and targetPart.Parent and targetPart.Transparency < 0.9 and maxHoldTime < 2.0 do
+                        while autoSkyFarm and targetPart and targetPart.Parent and targetPart.Transparency < 0.9 and maxHoldTime < 1.5 do
                             if hrp and targetPart and targetPart.Parent then
                                 hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
                                 hrp.Velocity = Vector3.new(0, 0, 0)
@@ -370,20 +370,20 @@ ToggleBtn.MouseButton1Click:Connect(function()
                             maxHoldTime = maxHoldTime + 0.1
                         end
                         
-                        -- 3. Nhặt xong -> Bay ngược lên bệ an toàn 1000 studs
+                        -- Xong việc -> Bay ngược lên bệ trời an toàn
                         if hrp and safePosition and not isCarryingSomeone() then
                             hrp.CFrame = CFrame.new(safePosition)
                             hrp.Velocity = Vector3.new(0, 0, 0)
                         end
                         task.wait(0.3)
                     else
-                        -- 4. Hết vật phẩm: Đứng yên trên bệ chờ lượt respawn mới
+                        -- Đang ở trên bệ chờ Soul mới: Teleport cố định mỗi 1.5s để chống rớt
                         if hrp and safePosition and not isCarryingSomeone() then
                             hrp.CFrame = CFrame.new(safePosition)
                             hrp.Velocity = Vector3.new(0, 0, 0)
                         end
                         collectedItems = {}
-                        task.wait(0.8)
+                        task.wait(1.5)
                     end
                 else
                     task.wait(1)
@@ -391,7 +391,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
             end
         end)
     else
-        -- TRẠNG THÁI OFF: TẮT FULLBRIGHT + XÓA BỆ + VIỀN TRẮNG
         ToggleBtn.Text = "🎃 AFK Farm Event: OFF 👻"
         ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
