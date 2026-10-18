@@ -1,5 +1,5 @@
 -- ========================================================
--- SCRIPT UPDATE NOTIFICATION + LOADSTRING LAUNCHER
+-- EVADE: SCRIPT UPDATE NOTIFICATION + AUTO LAUNCHER
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -91,8 +91,8 @@ HintLabel.Font = Enum.Font.SourceSansItalic
 HintLabel.Text = "Copy để lấy script mới"
 HintLabel.Parent = MainFrame
 
--- LINK SCRIPT MỚI NHẤT
-local newScriptString = 'loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autoevent"))()'
+-- ĐƯỜNG DẪN LOADSTRING MỚI NHẤT
+local newScriptString = 'loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autohalloween"))()'
 
 CopyBtn.MouseButton1Click:Connect(function()
     pcall(function()
@@ -105,8 +105,8 @@ CopyBtn.MouseButton1Click:Connect(function()
     CopyBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
 end)
 
--- TỰ ĐỘNG CHẠY SCRIPT MỚI NGAY SAU ĐÓ
+-- TỰ ĐỘNG CHẠY SCRIPT MỚI
 task.spawn(function()
     task.wait(0.5)
-    loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autoevent"))()
+    loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autohalloween"))()
 end)
