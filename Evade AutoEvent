@@ -1,5 +1,5 @@
 -- ========================================================
--- EVade: FULL-MAP SCAN SOUL HALLOWEEN AFK FARM EVENT
+-- EVADE: REAL-SPAWN SOUL AFK FARM (ORANGE NEON BORDER GLOW)
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -11,7 +11,6 @@ local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- TỰ ĐỘNG XOÁ TOÀN BỘ GUI CŨ NẾU ĐÃ TỪNG BẬT TRƯỚC ĐÓ
 pcall(function()
     if CoreGui:FindFirstChild("EvadeNeonFrameGui") then
         CoreGui.EvadeNeonFrameGui:Destroy()
@@ -21,7 +20,6 @@ pcall(function()
     end
 end)
 
--- Tạo ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "EvadeNeonFrameGui"
 ScreenGui.ResetOnSpawn = false
@@ -32,7 +30,6 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Tạo Frame chứa hiệu ứng viền phát sáng (Glow Holder)
 local GlowHolder = Instance.new("Frame")
 GlowHolder.Name = "GlowHolder"
 GlowHolder.Size = UDim2.new(0, 226, 0, 61)
@@ -45,7 +42,7 @@ local HolderCorner = Instance.new("UICorner")
 HolderCorner.CornerRadius = UDim.new(0, 11)
 HolderCorner.Parent = GlowHolder
 
--- Gradient làm sọc sáng rực rỡ chạy quanh viền
+-- Gradient làm sọc sáng rực rỡ chạy quanh viền (Default lúc OFF: Trắng / Xám)
 local HolderGradient = Instance.new("UIGradient")
 HolderGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
@@ -54,7 +51,6 @@ HolderGradient.Color = ColorSequence.new({
 })
 HolderGradient.Parent = GlowHolder
 
--- Tạo Nút Bấm Chính đè lên trên Frame sáng
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Name = "AFKFarmEventBtn"
 ToggleBtn.Size = UDim2.new(0, 220, 0, 55)
@@ -63,7 +59,7 @@ ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
 ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleBtn.TextSize = 18
 ToggleBtn.Font = Enum.Font.Creepster
-ToggleBtn.Text = "🎃 AFK Farm Event: OFF 👻"
+ToggleBtn.Text = "🎃 Evade Item Farm: OFF 👻"
 ToggleBtn.AutoButtonColor = false
 ToggleBtn.Parent = GlowHolder
 
@@ -71,14 +67,13 @@ local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 8)
 BtnCorner.Parent = ToggleBtn
 
--- Hiệu ứng xoay sọc sáng mượt mà quanh viền
+-- Hiệu ứng sọc sáng xoay tròn mượt mà quanh viền
 local rotationAngle = 0
 RunService.RenderStepped:Connect(function(dt)
     rotationAngle = (rotationAngle + dt * 250) % 360
     HolderGradient.Rotation = rotationAngle
 end)
 
--- Kéo thả nút đi khắp màn hình
 local dragging, dragInput, dragStart, startPos
 ToggleBtn.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -107,23 +102,13 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- Biến điều khiển Sky & Farm & Fullbright
 local autoSkyFarm = false
 local platformPart = nil
 local safePosition = nil
 local antiFallConnection = nil
 local speedJumpConnection = nil
 local fullbrightConnection = nil
-local collectedItems = {}
 
--- Lưu lại cấu hình ánh sáng gốc của game
-local originalBrightness = Lighting.Brightness
-local originalClockTime = Lighting.ClockTime
-local originalFogEnd = Lighting.FogEnd
-local originalGlobalShadows = Lighting.GlobalShadows
-local originalOutdoorAmbient = Lighting.OutdoorAmbient
-
--- Bật/Tắt Fullbright (Làm sáng toàn bộ map)
 local function setFullbright(state)
     if state then
         Lighting.Brightness = 2
@@ -145,30 +130,9 @@ local function setFullbright(state)
             fullbrightConnection:Disconnect()
             fullbrightConnection = nil
         end
-        Lighting.Brightness = originalBrightness
-        Lighting.ClockTime = originalClockTime
-        Lighting.FogEnd = originalFogEnd
-        Lighting.GlobalShadows = originalGlobalShadows
-        Lighting.OutdoorAmbient = originalOutdoorAmbient
     end
 end
 
--- Kiểm tra trạng thái đang bế người khác (Carry Check)
-local function isCarryingSomeone()
-    local char = LocalPlayer.Character
-    if not char then return false end
-    for _, item in ipairs(char:GetDescendants()) do
-        local itemName = string.lower(item.Name)
-        if itemName:find("carry") or itemName:find("holding") or itemName:find("corpse") then
-            if item:IsA("Weld") or item:IsA("Motor6D") or item:IsA("Value") then
-                return true
-            end
-        end
-    end
-    return false
-end
-
--- Tạo bệ đứng màu cam phát sáng rực rỡ với VIỀN LỬA CHÁY XUNG QUANH
 local function createSkyPlatform()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -179,54 +143,21 @@ local function createSkyPlatform()
     end
 
     local currentPos = hrp.Position
-    safePosition = Vector3.new(currentPos.X, currentPos.Y + 1000, currentPos.Z)
+    safePosition = Vector3.new(currentPos.X, currentPos.Y + 800, currentPos.Z)
 
     platformPart = Instance.new("Part")
-    platformPart.Name = "BorderBlazingPlatform"
-    platformPart.Size = Vector3.new(45, 3, 45)
+    platformPart.Name = "EvadeAFKPlatform"
+    platformPart.Size = Vector3.new(35, 3, 35)
     platformPart.Position = safePosition - Vector3.new(0, 3, 0)
     platformPart.Anchored = true
     platformPart.BrickColor = BrickColor.new("Neon orange")
     platformPart.Material = Enum.Material.Neon
     platformPart.Parent = Workspace
 
-    local offsets = {
-        Vector3.new(21, 1.5, 0),
-        Vector3.new(-21, 1.5, 0),
-        Vector3.new(0, 1.5, 21),
-        Vector3.new(0, 1.5, -21),
-        Vector3.new(21, 1.5, 21),
-        Vector3.new(-21, 1.5, -21),
-        Vector3.new(21, 1.5, -21),
-        Vector3.new(-21, 1.5, 21)
-    }
-
-    for _, offset in ipairs(offsets) do
-        local firePart = Instance.new("Part")
-        firePart.Size = Vector3.new(1, 1, 1)
-        firePart.Transparency = 1
-        firePart.Anchored = true
-        firePart.CanCollide = false
-        firePart.Position = platformPart.Position + offset
-        firePart.Parent = platformPart
-
-        local fire = Instance.new("Fire")
-        fire.Size = 10
-        fire.Heat = 12
-        fire.Parent = firePart
-    end
-
-    local glowBorder = Instance.new("SelectionBox")
-    glowBorder.Adornee = platformPart
-    glowBorder.Color3 = Color3.fromRGB(255, 255, 255)
-    glowBorder.LineThickness = 0.08
-    glowBorder.Parent = platformPart
-
     hrp.CFrame = CFrame.new(safePosition)
-    hrp.Velocity = Vector3.new(0, 0, 0)
+    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 end
 
--- Xóa bệ
 local function removeSkyPlatform()
     if platformPart and platformPart.Parent then
         platformPart:Destroy()
@@ -234,58 +165,20 @@ local function removeSkyPlatform()
     end
 end
 
--- HÀM QUÉT TOÀN BỘ MAP TÌM SOUL (TỐI ƯU HÓA KHÔNG BỎ SÓT)
-local function getFullMapSoulTarget()
+local function getActiveSpawnedItem()
     local bestTarget = nil
     
-    -- Duyệt qua toàn bộ workspace để tìm mọi đối tượng tiềm năng
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj and obj.Parent then
-            -- 1. Chặn tuyệt đối người chơi và thư mục Client
             if obj:IsDescendantOf(Players) then continue end
             
-            local parentFolder = obj.Parent
-            local parentModel = obj:IsA("Model") and obj or obj:FindFirstAncestorOfClass("Model")
-            
-            local isBelongToPlayer = false
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p.Character and (obj == p.Character or obj:IsDescendantOf(p.Character)) then
-                    isBelongToPlayer = true
-                    break
-                end
-            end
-            if isBelongToPlayer then continue end
-            
-            if (parentFolder and parentFolder.Name == "Client") or (parentModel and parentModel.Name == "Client") then
-                continue
-            end
-            
-            -- 2. Kiểm tra tên chứa "soul" ở cấp độ object, folder hoặc model trong toàn bộ map
             local name = string.lower(obj.Name)
-            local pName = parentFolder and string.lower(parentFolder.Name) or ""
-            local mName = parentModel and string.lower(parentModel.Name) or ""
+            local pName = obj.Parent and string.lower(obj.Parent.Name) or ""
             
-            local isSoulItem = name:find("soul") or pName:find("soul") or mName:find("soul")
+            local isItemCandidate = name:find("soul") or name:find("itemspawn") or name:find("eventitem") or 
+                                    pName:find("soul") or pName:find("itemspawn")
             
-            if isSoulItem then
-                -- 3. Chặn các đối tượng rác, lửa trại, piano, jump pad,... dù có lỡ dính tên soul
-                if name:find("fire") or pName:find("fire") or mName:find("fire") or
-                   name:find("campfire") or pName:find("campfire") or mName:find("campfire") or
-                   name:find("bonfire") or pName:find("bonfire") or mName:find("bonfire") or
-                   name:find("flame") or pName:find("flame") or mName:find("flame") or
-                   name:find("piano") or pName:find("piano") or mName:find("piano") or 
-                   name:find("jumppad") or pName:find("jumppad") or mName:find("jumppad") or
-                   name:find("speedboost") or pName:find("speedboost") or mName:find("speedboost") or
-                   name:find("boost") or name:find("pad") or name:find("spring") or
-                   name:find("elevator") or name:find("door") or name:find("wall") or 
-                   name:find("chair") or name:find("table") or name:find("prop") or 
-                   name:find("decor") or name:find("emote") or name:find("floor") or 
-                   name:find("painting") or name:find("bottle") or name:find("candle") or
-                   name:find("accessory") or name:find("hat") or name:find("handle") then
-                    continue
-                end
-                
-                -- Lấy phần thể hiện hình học (Part) hợp lệ để teleport
+            if isItemCandidate then
                 local targetPart = nil
                 if obj:IsA("BasePart") then
                     targetPart = obj
@@ -293,8 +186,14 @@ local function getFullMapSoulTarget()
                     targetPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
                 end
                 
-                if targetPart and not collectedItems[targetPart] then
-                    if targetPart.Transparency < 0.9 and targetPart.Size.Magnitude < 20 then
+                if targetPart then
+                    local hasPrompt = targetPart:FindFirstChildWhichIsA("ProximityPrompt", true) or 
+                                      (targetPart.Parent and targetPart.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
+                    local hasTouch = targetPart:FindFirstChildWhichIsA("TouchTransmitter", true)
+                    
+                    local isSpawnedReal = (targetPart.Transparency < 0.85) or hasPrompt or hasTouch
+                    
+                    if isSpawnedReal then
                         bestTarget = targetPart
                         break
                     end
@@ -306,31 +205,47 @@ local function getFullMapSoulTarget()
     return bestTarget
 end
 
--- Xử lý bật/tắt logic AFK Farm Event
+local function interactWithItem(targetPart)
+    pcall(function()
+        local prompt = targetPart:FindFirstChildWhichIsA("ProximityPrompt", true) or 
+                       (targetPart.Parent and targetPart.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
+        if prompt then
+            fireproximityprompt(prompt)
+        end
+    end)
+end
+
+local function isSoulStillAlive(targetPart)
+    if not targetPart or not targetPart.Parent then return false end
+    if targetPart.Transparency >= 0.85 then return false end
+    return true
+end
+
+-- LẮP ĐẶT HIỆU ỨNG VIỀN CAM SÁNG XOAY TRÒN CHO LÚC ON
 ToggleBtn.MouseButton1Click:Connect(function()
     autoSkyFarm = not autoSkyFarm
     
     if autoSkyFarm then
-        ToggleBtn.Text = "🎃 AFK Farm Event: ON 🔮"
-        ToggleBtn.TextColor3 = Color3.fromRGB(80, 255, 120)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 20, 10)
+        ToggleBtn.Text = "🎃 Evade Item Farm: ON 🔮"
+        ToggleBtn.TextColor3 = Color3.fromRGB(255, 170, 0)
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 5)
         
+        -- Sọc màu cam tươi rực rỡ chạy quanh viền lúc ON
         HolderGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 0)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 120, 0))
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 0)),
+            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 230, 150)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 140, 0))
         })
         
         setFullbright(true)
         createSkyPlatform()
-        collectedItems = {}
-        
+
         antiFallConnection = RunService.RenderStepped:Connect(function()
             if not autoSkyFarm or not safePosition then return end
             local char = LocalPlayer.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp and not isCarryingSomeone() then
-                hrp.RotVelocity = Vector3.new(0, 0, 0)
+            if hrp then
+                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
         end)
 
@@ -349,41 +264,34 @@ ToggleBtn.MouseButton1Click:Connect(function()
                 local char = LocalPlayer.Character
                 local hrp = char and char:FindFirstChild("HumanoidRootPart")
                 
-                if hrp and safePosition and not isCarryingSomeone() then
-                    local targetPart = getFullMapSoulTarget()
+                if hrp and safePosition then
+                    local targetPart = getActiveSpawnedItem()
                     
                     if targetPart then
-                        collectedItems[targetPart] = true
+                        local timeWaited = 0
+                        local maxTimeout = 3.0
                         
-                        -- Teleport tới ngay cạnh Soul trên toàn map
-                        hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
-                        hrp.Velocity = Vector3.new(0, 0, 0)
-                        
-                        -- Giữ vị trí để game nhận diện nhặt item
-                        local maxHoldTime = 0
-                        while autoSkyFarm and targetPart and targetPart.Parent and targetPart.Transparency < 0.9 and maxHoldTime < 1.5 do
+                        while autoSkyFarm and isSoulStillAlive(targetPart) and timeWaited < maxTimeout do
                             if hrp and targetPart and targetPart.Parent then
                                 hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
-                                hrp.Velocity = Vector3.new(0, 0, 0)
+                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                                interactWithItem(targetPart)
                             end
                             task.wait(0.1)
-                            maxHoldTime = maxHoldTime + 0.1
+                            timeWaited = timeWaited + 0.1
                         end
                         
-                        -- Xong việc -> Bay ngược lên bệ trời an toàn
-                        if hrp and safePosition and not isCarryingSomeone() then
+                        if hrp and safePosition then
                             hrp.CFrame = CFrame.new(safePosition)
-                            hrp.Velocity = Vector3.new(0, 0, 0)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                         end
-                        task.wait(0.3)
+                        task.wait(0.2)
                     else
-                        -- Đang ở trên bệ chờ Soul mới: Teleport cố định mỗi 1.5s để chống rớt
-                        if hrp and safePosition and not isCarryingSomeone() then
+                        if hrp and safePosition then
                             hrp.CFrame = CFrame.new(safePosition)
-                            hrp.Velocity = Vector3.new(0, 0, 0)
+                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                         end
-                        collectedItems = {}
-                        task.wait(1.5)
+                        task.wait(0.5)
                     end
                 else
                     task.wait(1)
@@ -391,10 +299,11 @@ ToggleBtn.MouseButton1Click:Connect(function()
             end
         end)
     else
-        ToggleBtn.Text = "🎃 AFK Farm Event: OFF 👻"
+        ToggleBtn.Text = "🎃 Evade Item Farm: OFF 👻"
         ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
         
+        -- Khôi phục dải sọc trắng/xám lúc OFF
         HolderGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
             ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 120, 120)),
@@ -403,20 +312,9 @@ ToggleBtn.MouseButton1Click:Connect(function()
         
         setFullbright(false)
         
-        if antiFallConnection then
-            antiFallConnection:Disconnect()
-            antiFallConnection = nil
-        end
-        if speedJumpConnection then
-            speedJumpConnection:Disconnect()
-            speedJumpConnection = nil
-            local char = LocalPlayer.Character
-            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = 16
-                humanoid.JumpPower = 50
-            end
-        end
+        if antiFallConnection then antiFallConnection:Disconnect() antiFallConnection = nil end
+        if speedJumpConnection then speedJumpConnection:Disconnect() speedJumpConnection = nil end
+        
         removeSkyPlatform()
     end
 end)
