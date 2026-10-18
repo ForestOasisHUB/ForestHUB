@@ -1,27 +1,23 @@
 -- ========================================================
--- EVADE: INSTANT FULLBRIGHT ON TOGGLE & SOUL AFK FARM
+-- SCRIPT UPDATED NOTIFICATION & AUTO COPY GUI
 -- ========================================================
 
 local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
-
 local LocalPlayer = Players.LocalPlayer
 
 pcall(function()
-    if CoreGui:FindFirstChild("EvadeNeonFrameGui") then
-        CoreGui.EvadeNeonFrameGui:Destroy()
+    if CoreGui:FindFirstChild("ScriptUpdateGui") then
+        CoreGui.ScriptUpdateGui:Destroy()
     end
-    if LocalPlayer.PlayerGui:FindFirstChild("EvadeNeonFrameGui") then
-        LocalPlayer.PlayerGui.EvadeNeonFrameGui:Destroy()
+    if LocalPlayer.PlayerGui:FindFirstChild("ScriptUpdateGui") then
+        LocalPlayer.PlayerGui.ScriptUpdateGui:Destroy()
     end
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EvadeNeonFrameGui"
+ScreenGui.Name = "ScriptUpdateGui"
 ScreenGui.ResetOnSpawn = false
 pcall(function()
     ScreenGui.Parent = CoreGui
@@ -30,390 +26,82 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
-local GlowHolder = Instance.new("Frame")
-GlowHolder.Name = "GlowHolder"
-GlowHolder.Size = UDim2.new(0, 226, 0, 61)
-GlowHolder.Position = UDim2.new(0, 50, 0, 50)
-GlowHolder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-GlowHolder.BorderSizePixel = 0
-GlowHolder.ClipsDescendants = true
-GlowHolder.Parent = ScreenGui
+-- KHUNG THÔNG BÁO CHÍNH
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 140)
+MainFrame.Position = UDim2.new(0.5, -160, 0.4, -70)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
 
-local HolderCorner = Instance.new("UICorner")
-HolderCorner.CornerRadius = UDim.new(0, 11)
-HolderCorner.Parent = GlowHolder
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.Parent = MainFrame
 
-local HolderGradient = Instance.new("UIGradient")
-HolderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 120, 120)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-})
-HolderGradient.Parent = GlowHolder
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(255, 140, 0)
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
 
-local EffectFrame = Instance.new("Frame")
-EffectFrame.Name = "FallingContainer"
-EffectFrame.Size = UDim2.new(1, 0, 1, 0)
-EffectFrame.BackgroundTransparency = 1
-EffectFrame.ClipsDescendants = true
-EffectFrame.ZIndex = 2
-EffectFrame.Parent = GlowHolder
+-- TIÊU ĐỀ TIẾNG ANH
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, 0, 0, 45)
+TitleLabel.Position = UDim2.new(0, 0, 0, 10)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.TextColor3 = Color3.fromRGB(255, 170, 0)
+TitleLabel.TextSize = 18
+TitleLabel.Font = Enum.Font.Creepster
+TitleLabel.Text = "✨ SCRIPT HAS BEEN UPDATED! ✨"
+TitleLabel.Parent = MainFrame
 
-local ToggleBtn = Instance.new("TextButton")
-ToggleBtn.Name = "AFKFarmEventBtn"
-ToggleBtn.Size = UDim2.new(0, 220, 0, 55)
-ToggleBtn.Position = UDim2.new(0, 3, 0, 3)
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
-ToggleBtn.BackgroundTransparency = 0.15
-ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleBtn.TextSize = 18
-ToggleBtn.Font = Enum.Font.Creepster
-ToggleBtn.Text = "🎃 AFK Farm Event: OFF 👻"
-ToggleBtn.AutoButtonColor = false
-ToggleBtn.ZIndex = 3
-ToggleBtn.Parent = GlowHolder
+-- DÒNG CHÚ THÍCH PHỤ
+local SubLabel = Instance.new("TextLabel")
+SubLabel.Size = UDim2.new(1, 0, 0, 25)
+SubLabel.Position = UDim2.new(0, 0, 0, 50)
+SubLabel.BackgroundTransparency = 1
+SubLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SubLabel.TextSize = 13
+SubLabel.Font = Enum.Font.SourceSansBold
+SubLabel.Text = "Please copy below to get the new script"
+SubLabel.Parent = MainFrame
+
+-- NÚT COPY
+local CopyBtn = Instance.new("TextButton")
+CopyBtn.Size = UDim2.new(0, 280, 0, 40)
+CopyBtn.Position = UDim2.new(0.5, -140, 0, 85)
+CopyBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
+CopyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CopyBtn.TextSize = 14
+CopyBtn.Font = Enum.Font.SourceSansBold
+CopyBtn.Text = "Copy"
+CopyBtn.AutoButtonColor = false
+CopyBtn.Parent = MainFrame
 
 local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 8)
-BtnCorner.Parent = ToggleBtn
+BtnCorner.Parent = CopyBtn
 
-local rotationAngle = 0
-RunService.RenderStepped:Connect(function(dt)
-    rotationAngle = (rotationAngle + dt * 250) % 360
-    HolderGradient.Rotation = rotationAngle
-end)
+-- DÒNG CHỮ HƯỚNG DẪN Ở DƯỚI NÚT
+local HintLabel = Instance.new("TextLabel")
+HintLabel.Size = UDim2.new(1, 0, 0, 20)
+HintLabel.Position = UDim2.new(0, 0, 1, 5)
+HintLabel.BackgroundTransparency = 1
+HintLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+HintLabel.TextSize = 12
+HintLabel.Font = Enum.Font.SourceSansItalic
+HintLabel.Text = "Copy để lấy script mới"
+HintLabel.Parent = MainFrame
 
-local dragging, dragInput, dragStart, startPos
-ToggleBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = GlowHolder.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
+-- HÀNH ĐỘNG BẤM NÚT COPY
+local newScriptString = 'loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_foresthub-afkevent"))()'
 
-ToggleBtn.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        GlowHolder.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-
-local autoSkyFarm = false
-local platformPart = nil
-local safePosition = nil
-local antiFallConnection = nil
-local speedJumpConnection = nil
-local fullbrightConnection = nil
-
--- Lưu lại giá trị ánh sáng gốc của game
-local originalBrightness = Lighting.Brightness
-local originalClockTime = Lighting.ClockTime
-local originalFogEnd = Lighting.FogEnd
-local originalGlobalShadows = Lighting.GlobalShadows
-local originalOutdoorAmbient = Lighting.OutdoorAmbient
-
-local function spawnFallingParticle(icon)
-    local particleLabel = Instance.new("TextLabel")
-    particleLabel.Text = icon
-    particleLabel.Size = UDim2.new(0, 18, 0, 18)
-    particleLabel.BackgroundTransparency = 1
-    particleLabel.TextSize = math.random(13, 17)
-    particleLabel.ZIndex = 2
-    
-    local startX = math.random(5, 205)
-    particleLabel.Position = UDim2.new(0, startX, 0, -20)
-    particleLabel.Parent = EffectFrame
-    
-    local fallSpeed = math.random(25, 45)
-    local fallConnection
-    local currentY = -20
-    local rot = math.random(0, 360)
-    
-    fallConnection = RunService.RenderStepped:Connect(function(dt)
-        if not particleLabel.Parent then
-            if fallConnection then fallConnection:Disconnect() end
-            return
-        end
-        
-        currentY = currentY + (dt * fallSpeed)
-        rot = rot + (dt * 50)
-        particleLabel.Position = UDim2.new(0, startX, 0, currentY)
-        particleLabel.Rotation = rot
-        
-        if currentY > 65 then
-            particleLabel:Destroy()
-            if fallConnection then fallConnection:Disconnect() end
-        end
-    end)
-end
-
-task.spawn(function()
-    while ScreenGui and ScreenGui.Parent do
-        if autoSkyFarm then
-            spawnFallingParticle("🎃")
-        else
-            spawnFallingParticle("👻")
-        end
-        task.wait(0.35)
-    end
-end)
-
--- BẬT FULLBRIGHT LẬP TỨC CHO TOÀN BỘ MAP KHI BẬT
-local function setFullbright(state)
-    if state then
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 12
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = false
-        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-        
-        fullbrightConnection = Lighting.Changed:Connect(function()
-            if autoSkyFarm then
-                Lighting.Brightness = 2
-                Lighting.ClockTime = 12
-                Lighting.GlobalShadows = false
-                Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
-            end
-        end)
-    else
-        if fullbrightConnection then
-            fullbrightConnection:Disconnect()
-            fullbrightConnection = nil
-        end
-        Lighting.Brightness = originalBrightness
-        Lighting.ClockTime = originalClockTime
-        Lighting.FogEnd = originalFogEnd
-        Lighting.GlobalShadows = originalGlobalShadows
-        Lighting.OutdoorAmbient = originalOutdoorAmbient
-    end
-end
-
-local function createSkyPlatform()
-    local char = LocalPlayer.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    if platformPart and platformPart.Parent then
-        platformPart:Destroy()
-    end
-
-    local currentPos = hrp.Position
-    safePosition = Vector3.new(currentPos.X, currentPos.Y + 800, currentPos.Z)
-
-    platformPart = Instance.new("Part")
-    platformPart.Name = "PureOrangeNeonPlatform"
-    platformPart.Size = Vector3.new(40, 3, 40)
-    platformPart.Position = safePosition - Vector3.new(0, 3, 0)
-    platformPart.Anchored = true
-    platformPart.BrickColor = BrickColor.new("Neon orange")
-    platformPart.Material = Enum.Material.Neon
-    platformPart.Parent = Workspace
-
-    local glowBorder = Instance.new("SelectionBox")
-    glowBorder.Adornee = platformPart
-    glowBorder.Color3 = Color3.fromRGB(255, 140, 0)
-    glowBorder.LineThickness = 0.1
-    glowBorder.Parent = platformPart
-
-    local offsets = {
-        Vector3.new(18, 1.5, 18),
-        Vector3.new(-18, 1.5, -18),
-        Vector3.new(18, 1.5, -18),
-        Vector3.new(-18, 1.5, 18)
-    }
-
-    for _, offset in ipairs(offsets) do
-        local firePart = Instance.new("Part")
-        firePart.Size = Vector3.new(1, 1, 1)
-        firePart.Transparency = 1
-        firePart.Anchored = true
-        firePart.CanCollide = false
-        firePart.Position = platformPart.Position + offset
-        firePart.Parent = platformPart
-
-        local fire = Instance.new("Fire")
-        fire.Size = 10
-        fire.Heat = 12
-        fire.Color = Color3.fromRGB(255, 120, 0)
-        fire.SecondaryColor = Color3.fromRGB(255, 200, 0)
-        fire.Parent = firePart
-    end
-
-    hrp.CFrame = CFrame.new(safePosition)
-    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-end
-
-local function removeSkyPlatform()
-    if platformPart and platformPart.Parent then
-        platformPart:Destroy()
-        platformPart = nil
-    end
-end
-
-local function getActiveSpawnedItem()
-    local bestTarget = nil
-    
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj and obj.Parent then
-            if obj:IsDescendantOf(Players) then continue end
-            
-            local name = string.lower(obj.Name)
-            local pName = obj.Parent and string.lower(obj.Parent.Name) or ""
-            
-            local isItemCandidate = name:find("soul") or name:find("itemspawn") or name:find("eventitem") or 
-                                    pName:find("soul") or pName:find("itemspawn")
-            
-            if isItemCandidate then
-                local targetPart = nil
-                if obj:IsA("BasePart") then
-                    targetPart = obj
-                elseif obj:IsA("Model") then
-                    targetPart = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
-                end
-                
-                if targetPart then
-                    local hasPrompt = targetPart:FindFirstChildWhichIsA("ProximityPrompt", true) or 
-                                      (targetPart.Parent and targetPart.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
-                    local hasTouch = targetPart:FindFirstChildWhichIsA("TouchTransmitter", true)
-                    
-                    local isSpawnedReal = (targetPart.Transparency < 0.85) or hasPrompt or hasTouch
-                    
-                    if isSpawnedReal then
-                        bestTarget = targetPart
-                        break
-                    end
-                end
-            end
-        end
-    end
-    
-    return bestTarget
-end
-
-local function interactWithItem(targetPart)
+CopyBtn.MouseButton1Click:Connect(function()
     pcall(function()
-        local prompt = targetPart:FindFirstChildWhichIsA("ProximityPrompt", true) or 
-                       (targetPart.Parent and targetPart.Parent:FindFirstChildWhichIsA("ProximityPrompt", true))
-        if prompt then
-            fireproximityprompt(prompt)
-        end
+        setclipboard(newScriptString)
     end)
-end
-
-local function isSoulStillAlive(targetPart)
-    if not targetPart or not targetPart.Parent then return false end
-    if targetPart.Transparency >= 0.85 then return false end
-    return true
-end
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    autoSkyFarm = not autoSkyFarm
-    
-    for _, child in ipairs(EffectFrame:GetChildren()) do
-        child:Destroy()
-    end
-    
-    if autoSkyFarm then
-        ToggleBtn.Text = "🎃 AFK Farm Event: ON 🔮"
-        ToggleBtn.TextColor3 = Color3.fromRGB(255, 170, 0)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 15, 5)
-        
-        HolderGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 0)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 230, 150)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 140, 0))
-        })
-        
-        setFullbright(true)
-        createSkyPlatform()
-
-        antiFallConnection = RunService.RenderStepped:Connect(function()
-            if not autoSkyFarm or not safePosition then return end
-            local char = LocalPlayer.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            end
-        end)
-
-        speedJumpConnection = RunService.Stepped:Connect(function()
-            if not autoSkyFarm then return end
-            local char = LocalPlayer.Character
-            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = 30
-                humanoid.JumpPower = 80
-            end
-        end)
-
-        task.spawn(function()
-            while autoSkyFarm do
-                local char = LocalPlayer.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                
-                if hrp and safePosition then
-                    local targetPart = getActiveSpawnedItem()
-                    
-                    if targetPart then
-                        local timeWaited = 0
-                        local maxTimeout = 3.0
-                        
-                        while autoSkyFarm and isSoulStillAlive(targetPart) and timeWaited < maxTimeout do
-                            if hrp and targetPart and targetPart.Parent then
-                                hrp.CFrame = targetPart.CFrame + Vector3.new(0, 1, 0)
-                                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                                interactWithItem(targetPart)
-                            end
-                            task.wait(0.1)
-                            timeWaited = timeWaited + 0.1
-                        end
-                        
-                        if hrp and safePosition then
-                            hrp.CFrame = CFrame.new(safePosition)
-                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        end
-                        task.wait(0.2)
-                    else
-                        if hrp and safePosition then
-                            hrp.CFrame = CFrame.new(safePosition)
-                            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                        end
-                        task.wait(0.5)
-                    end
-                else
-                    task.wait(1)
-                end
-            end
-        end)
-    else
-        ToggleBtn.Text = "🎃 AFK Farm Event: OFF 👻"
-        ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        ToggleBtn.BackgroundColor3 = Color3.fromRGB(20, 15, 30)
-        
-        HolderGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 120, 120)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-        })
-        
-        setFullbright(false)
-        
-        if antiFallConnection then antiFallConnection:Disconnect() antiFallConnection = nil end
-        if speedJumpConnection then speedJumpConnection:Disconnect() speedJumpConnection = nil end
-        
-        removeSkyPlatform()
-    end
+    CopyBtn.Text = "COPIED TO CLIPBOARD!"
+    CopyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+    task.wait(2)
+    CopyBtn.Text = "Copy"
+    CopyBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
 end)
