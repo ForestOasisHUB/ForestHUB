@@ -1,5 +1,5 @@
 -- ========================================================
--- EVADE: SCRIPT UPDATE NOTIFICATION + AUTO LAUNCHER
+-- SCRIPT UPDATE NOTIFICATION + AUTO LAUNCHER & AUTO DESTROY
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -100,12 +100,15 @@ CopyBtn.MouseButton1Click:Connect(function()
     end)
     CopyBtn.Text = "COPIED TO CLIPBOARD!"
     CopyBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-    task.wait(2)
-    CopyBtn.Text = "Copy"
-    CopyBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
+    
+    -- Đợi 1 giây rồi tự động xóa hẳn GUI thông báo
+    task.wait(1)
+    if ScreenGui and ScreenGui.Parent then
+        ScreenGui:Destroy()
+    end
 end)
 
--- TỰ ĐỘNG CHẠY SCRIPT MỚI
+-- TỰ ĐỘNG CHẠY SCRIPT MỚI NGAY SAU ĐÓ
 task.spawn(function()
     task.wait(0.5)
     loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autohalloween"))()
