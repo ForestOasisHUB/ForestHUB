@@ -1,5 +1,5 @@
 -- ========================================================
--- EVADE: PURE NEON ORANGE PLATFORM & SOUL AFK FARM
+-- EVADE: INSTANT FULLBRIGHT ON TOGGLE & SOUL AFK FARM
 -- ========================================================
 
 local Players = game:GetService("Players")
@@ -118,6 +118,13 @@ local antiFallConnection = nil
 local speedJumpConnection = nil
 local fullbrightConnection = nil
 
+-- Lưu lại giá trị ánh sáng gốc của game
+local originalBrightness = Lighting.Brightness
+local originalClockTime = Lighting.ClockTime
+local originalFogEnd = Lighting.FogEnd
+local originalGlobalShadows = Lighting.GlobalShadows
+local originalOutdoorAmbient = Lighting.OutdoorAmbient
+
 local function spawnFallingParticle(icon)
     local particleLabel = Instance.new("TextLabel")
     particleLabel.Text = icon
@@ -164,20 +171,21 @@ task.spawn(function()
     end
 end)
 
+-- BẬT FULLBRIGHT LẬP TỨC CHO TOÀN BỘ MAP KHI BẬT
 local function setFullbright(state)
     if state then
-        Lighting.Brightness = 1.5
-        Lighting.ClockTime = 0
-        Lighting.FogEnd = 5000
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 12
+        Lighting.FogEnd = 100000
         Lighting.GlobalShadows = false
-        Lighting.OutdoorAmbient = Color3.fromRGB(30, 15, 50)
+        Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
         
         fullbrightConnection = Lighting.Changed:Connect(function()
             if autoSkyFarm then
-                Lighting.Brightness = 1.5
-                Lighting.ClockTime = 0
+                Lighting.Brightness = 2
+                Lighting.ClockTime = 12
                 Lighting.GlobalShadows = false
-                Lighting.OutdoorAmbient = Color3.fromRGB(30, 15, 50)
+                Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
             end
         end)
     else
@@ -185,10 +193,14 @@ local function setFullbright(state)
             fullbrightConnection:Disconnect()
             fullbrightConnection = nil
         end
+        Lighting.Brightness = originalBrightness
+        Lighting.ClockTime = originalClockTime
+        Lighting.FogEnd = originalFogEnd
+        Lighting.GlobalShadows = originalGlobalShadows
+        Lighting.OutdoorAmbient = originalOutdoorAmbient
     end
 end
 
--- TẠO BỆ MÀU CAM NEON THUẦN TÚY RỰC RỠ
 local function createSkyPlatform()
     local char = LocalPlayer.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -201,7 +213,6 @@ local function createSkyPlatform()
     local currentPos = hrp.Position
     safePosition = Vector3.new(currentPos.X, currentPos.Y + 800, currentPos.Z)
 
-    -- Phần bệ chính mang màu Neon Orange phát sáng toàn bộ
     platformPart = Instance.new("Part")
     platformPart.Name = "PureOrangeNeonPlatform"
     platformPart.Size = Vector3.new(40, 3, 40)
@@ -211,14 +222,12 @@ local function createSkyPlatform()
     platformPart.Material = Enum.Material.Neon
     platformPart.Parent = Workspace
 
-    -- Viền phát sáng màu cam đậm nét xung quanh
     local glowBorder = Instance.new("SelectionBox")
     glowBorder.Adornee = platformPart
     glowBorder.Color3 = Color3.fromRGB(255, 140, 0)
     glowBorder.LineThickness = 0.1
     glowBorder.Parent = platformPart
 
-    -- Vòng lửa cam cháy rực ở 4 góc bệ
     local offsets = {
         Vector3.new(18, 1.5, 18),
         Vector3.new(-18, 1.5, -18),
