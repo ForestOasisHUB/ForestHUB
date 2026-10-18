@@ -1,12 +1,11 @@
 -- ========================================================
--- EVADE: AFK FARM EVENT + SCRIPT UPDATE NOTIFICATION
+-- SCRIPT UPDATE NOTIFICATION + LOADSTRING LAUNCHER
 -- ========================================================
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local LocalPlayer = Players.LocalPlayer
 
--- HIỂN THỊ GUI THÔNG BÁO UPDATE VÀ NÚT COPY
 pcall(function()
     if CoreGui:FindFirstChild("ScriptUpdateGui") then
         CoreGui.ScriptUpdateGui:Destroy()
@@ -26,6 +25,7 @@ if not ScreenGui.Parent then
     ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 end
 
+-- KHUNG THÔNG BÁO CHÍNH
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 320, 0, 140)
 MainFrame.Position = UDim2.new(0.5, -160, 0.4, -70)
@@ -42,6 +42,7 @@ MainStroke.Color = Color3.fromRGB(255, 140, 0)
 MainStroke.Thickness = 2
 MainStroke.Parent = MainFrame
 
+-- TIÊU ĐỀ TIẾNG ANH
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, 0, 0, 45)
 TitleLabel.Position = UDim2.new(0, 0, 0, 10)
@@ -52,6 +53,7 @@ TitleLabel.Font = Enum.Font.Creepster
 TitleLabel.Text = "✨ SCRIPT HAS BEEN UPDATED! ✨"
 TitleLabel.Parent = MainFrame
 
+-- DÒNG CHÚ THÍCH PHỤ
 local SubLabel = Instance.new("TextLabel")
 SubLabel.Size = UDim2.new(1, 0, 0, 25)
 SubLabel.Position = UDim2.new(0, 0, 0, 50)
@@ -62,6 +64,7 @@ SubLabel.Font = Enum.Font.SourceSansBold
 SubLabel.Text = "Please copy below to get the new script"
 SubLabel.Parent = MainFrame
 
+-- NÚT COPY
 local CopyBtn = Instance.new("TextButton")
 CopyBtn.Size = UDim2.new(0, 280, 0, 40)
 CopyBtn.Position = UDim2.new(0.5, -140, 0, 85)
@@ -77,6 +80,7 @@ local BtnCorner = Instance.new("UICorner")
 BtnCorner.CornerRadius = UDim.new(0, 8)
 BtnCorner.Parent = CopyBtn
 
+-- DÒNG CHỮ HƯỚNG DẪN Ở DƯỚI NÚT
 local HintLabel = Instance.new("TextLabel")
 HintLabel.Size = UDim2.new(1, 0, 0, 20)
 HintLabel.Position = UDim2.new(0, 0, 1, 5)
@@ -87,6 +91,7 @@ HintLabel.Font = Enum.Font.SourceSansItalic
 HintLabel.Text = "Copy để lấy script mới"
 HintLabel.Parent = MainFrame
 
+-- LINK SCRIPT MỚI NHẤT
 local newScriptString = 'loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autoevent"))()'
 
 CopyBtn.MouseButton1Click:Connect(function()
@@ -100,7 +105,7 @@ CopyBtn.MouseButton1Click:Connect(function()
     CopyBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 0)
 end)
 
--- CHẠY LOADSTRING CHÍNH THỨC
+-- TỰ ĐỘNG CHẠY SCRIPT MỚI NGAY SAU ĐÓ
 task.spawn(function()
     task.wait(0.5)
     loadstring(game:HttpGet("https://apexhubeditor.vercel.app/api/raw?name=8wQC8NLmEmUtbIctC9ZHXIshY9z2_evade-autoevent"))()
