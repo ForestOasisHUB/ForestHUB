@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "autobuild_litematica",
+  "version": "1.21.11",
+  "name": "ForestAutoBuild",
+  "description": "Mod tự xây theo Layer và tự mua đồ /ah giao diện xanh lá.",
+  "clients": [
+    "com.autobuild.client.AutoBuildLitematicaClient"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "1.21.11",
+    "fabric": "*"
+  }
+}
